@@ -5,12 +5,8 @@ var debug = require('debug')('ibus:route');
 var express = require('express');
 var router = express.Router();
 var mysql = require('mysql');
-var connection = mysql.createConnection({
-    host     : '192.168.1.3',
-    user     : 'alex',
-    password : 'Pa8#9ki-',
-    database : 'test_bus'
-});
+var sql_config = require('../sql_config');
+var connection = mysql.createConnection(sql_config);
 var meterToCord = 0.00000900900901;
 
 /* GET home page. */
