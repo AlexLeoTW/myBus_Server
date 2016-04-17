@@ -8,11 +8,15 @@ var busInfo = require('../Testing/businfo.js');
 // initial DB object
 var mysql = require('mysql');
 var sql_config = require('../sql_config');
-var connection = mysql.createConnection(sql_config);
+var connection = mysql.createPool(sql_config.db);
+
+router.get('/route', function (req, res, next) {
+    
+});
 
 router.get('/bus', function(req, res, next) {
     res.set("Connection", "close");
-    res.send(busInfo.getBus('req.body.id', mysql, 'myBusV2.raw'));
+    res.send();
 });
 
 module.exports = router;
