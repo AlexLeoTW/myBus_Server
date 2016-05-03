@@ -1,0 +1,30 @@
+Bus
+    * station
+    * route
+    * is_reverse
+    * limit
+
+    GET \bus ? statation=高鐵台中站 & route=160 & is_reverse=true & limit=1
+
+    return:
+        {
+            "bus": "ABC-123",
+            "time": "hh:mm:ss",
+            "takes_longer": 1 //(1 as >; 0 as ==; -1 as <)
+        }
+
+================================================================================
+
+Bus
+    * bus: ABC-123
+    * route: 160
+    * longitude:    dynamic "{ 0, 250, 450, 650, 1000, 1200, 1450, 1550, 1650 }" KK Unit
+    * latitude:     fixed(0)
+    * is_reverse:   ture
+    * speed:        KK/s
+
+    POST \bus {xxx}
+
+    return
+    * 200 OK
+    * 400 Bad Request
