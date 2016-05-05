@@ -8,18 +8,35 @@ var reftt = fs.readFileSync("ref_timetable.html", "utf-8");
 
 var timetable = '';
 
-request.get('http://citybus.taichung.gov.tw/tcbus2/GetTimeTable1.php?useXno=1&route=160')
+/*request.get('http://citybus.taichung.gov.tw/tcbus2/GetTimeTable1.php?useXno=1&route=160')
     .on('error', function(err) {
         console.log(err);
     }).on('response', function(response) {
-        console.log(response.statusCode); // 200
-        console.log(response.headers['content-type']); // 'image/png'
+        //console.log(response.statusCode); // 200
+        //console.log(response.headers['content-type']); // 'image/png'
     }).on('data', function(data) {
         timetable += iconv.decode(data, 'utf-8');
     }).on('end', function() {
         //console.log(timetable);
         parseTimeTable(timetable);
-    });
+    });*/
+
+request.post({
+    url:'http://citybus.taichung.gov.tw/iTravel/RealRoute/aspx/RealRoute.ashx',
+    formData: {
+        //Type=GetFreshData&Lang=Cht&Data=160_%2C1_%2C9&BusType=0
+        Type: 'GetFreshData',
+        Lang: 'Cht',
+        Data: '160_,1_,9',
+        BusType: 0
+    }},
+    function optionalCallback(err, httpResponse, body) {
+        if (err) {
+            return console.error('upload failed:', err);
+        }
+        console.log('Upload successful!  Server responded with:', body);
+    }
+);
 
 function parseTimeTable(timetableHtml) {
     var timetable = {
