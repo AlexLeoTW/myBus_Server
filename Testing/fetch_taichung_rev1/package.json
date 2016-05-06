@@ -1,0 +1,13 @@
+{
+  "name": "fetch_taichung_rev1",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./index.js"
+  },
+  "dependencies": {
+    "jsdom": "~0.2.2",
+    "mysql": "~2.10.2",
+    "request": "~2.72.0"
+  }
+}
