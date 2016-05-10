@@ -1,7 +1,7 @@
 /*jslint node: true, nomen: true, unparam: true */
 'use strict';
 
-var debug = require('debug')('ibus:route');
+var debug = require('debug')('myBus:route');
 var express = require('express');
 var router = express.Router();
 var mysql = require('mysql');
@@ -11,7 +11,7 @@ var meterToCord = 0.00000900900901;
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
-    res.render('index', { title: 'iBus' });
+    res.render('index', { title: 'myBus' });
 });
 
 router.post('/getRoute', function (req, res, next) {
