@@ -21,21 +21,23 @@ function fetchTimeTable(routeNo) {
         });
 }
 
-function fetchBusStatus(routeNo, from, to) {
+function fetchBusStatus(routeNo, fromNo, toNo) {
     request.post({
         url:'http://citybus.taichung.gov.tw/iTravel/RealRoute/aspx/RealRoute.ashx',
         formData: {
             //Type=GetFreshData&Lang=Cht&Data=160_%2C1_%2C9&BusType=0
             Type: 'GetFreshData',
             Lang: 'Cht',
-            Data: '160_,' + from + '_,' + to,
+            Data: routeNo + '_,' + fromNo + '_,' + toNo,
             BusType: 0
         }},
         function optionalCallback(err, httpResponse, body) {
             if (err) {
                 return console.error('upload failed:', err);
             }
-            parseRealTime(body);
+            //parseRealTime(body);
+            console.log('routeNo = ', routeNo, 'fromNo = ', fromNo, 'toNo = ', toNo);
+            console.log(JSON.stringify(parseRealTime(body)));
         }
     );
 }
