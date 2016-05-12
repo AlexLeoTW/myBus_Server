@@ -5,9 +5,11 @@ var debug = require('debug')('myBus:rv2');
 var express = require('express');
 var router = express.Router();
 var busInfo = require('../Testing/businfo.js');
+var Promise = require('promise');
+require('promise/lib/rejection-tracking').enable();
 
 // initial DB object
-var mysql = require('mysql');
+var mysql = require('promise-mysql');
 var sql_config = require('../sql_config');
 var db = mysql.createPool(sql_config.db);
 
@@ -26,35 +28,26 @@ router.post('/register', (req, res) => {
 });
 
 router.post('/reservation', (req, res) => {
-    // thisStop=FCU001&busNo=NO.160&arrStop=001&UID=b397a7f7
     // INSERT INTO `Reservation_List`(`UUID`, `route`, `is_reverse`, `from_sn`, `to_sn`) VALUES ('B397A7F7',160,false,1,3)
-    var query = "INSERT INTO `Reservation_List`(`UUID`, `route`, `is_reverse`, `from_sn`, `to_sn`) ";
-    console.log(JSON.stringify(req.body));
+    var query = "INSERT INTO `Reservation_List`(`UID`, `route`, `is_reverse`, `from_sn`, `to_sn`) ";
+
     if (req.body.UID && req.body.route && req.body.from_sn && req.body.to_sn) {
         query += 'VALUES (\'' + req.body.UID + '\',' + req.body.route + ',' + (req.body.from_sn<req.body.to_sn) + ',' + req.body.from_sn + ',' + req.body.to_sn + ')';
-        debug('query=[' +  query + ']');
-        db.query(query, (err, rows, fields) => {
-            if (err) {
-                debug(err.code);
-                if (err.code == 'ER_DUP_ENTRY') {
-                    err = new Error('Duplicated reservation');
-                    err.status = 400;
-                    /*res.render('error', {
-                        message: err.message,
-                        error: {}
-                    });*/
-                    // Promise
-                }
-            }
+        db.query(query).then( (raws, field) => {
+            res.send("");
+        }).error((err) => {
+            debug(err.code);
+            res.status(400);
+            res.render('error', {
+                message: 'Error Dulipicated reservation',
+                error: {}
+            });
         });
     } else {
         var err = new Error('Too few arguments');
         err.status = 400;
         throw err;
     }
-
-    res.set("Connection", "close");
-    res.send('');
 });
 
 module.exports = router;
