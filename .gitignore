@@ -31,3 +31,12 @@ npm-debug.log
 
 # Database Password
 sql_config.js
+
+# SSL Cert
+ssl_config.js
+ssl
+
+# Test data fetch/input
+Testing/fetch_taichung_rev1/result.txt
+Testing/fetch_taichung_rev1/data.txt
+Testing/fetch_taichung_rev1/data2.txt
