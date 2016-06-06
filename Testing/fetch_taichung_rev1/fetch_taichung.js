@@ -253,8 +253,9 @@ function parseBusList(data) {
     }
 
     var rows = data.split('_|');
-    var busObj = {};
+
     for (var i=0; i<rows.length; i++) {
+        var busObj = {};
         var chunks = rows[i].split('_,');
         busObj.plate_no = chunks[0];
         busObj.longitude = Number(chunks[1]);
