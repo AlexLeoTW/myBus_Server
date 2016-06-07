@@ -40,3 +40,4 @@ ssl
 Testing/fetch_taichung_rev1/result.txt
 Testing/fetch_taichung_rev1/data.txt
 Testing/fetch_taichung_rev1/data2.txt
+module/fetch_taichung_test.js
