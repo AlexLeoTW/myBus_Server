@@ -9,6 +9,7 @@ var debug = require('debug')('myBus:server');
 var ssl = require('../ssl_config');
 var http = require('http'),
     https = require('tls');
+var CronJob = require('cron').CronJob;
 
 /**
  * Get port from environment and store in Express.
@@ -95,3 +96,10 @@ function onListening() {
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
 }
+
+/**
+ * Add cron jobs.
+ */
+new CronJob('* * * * * *', function() {
+    console.log('You will see this message every second');
+}, null, true, 'America/Los_Angeles');
