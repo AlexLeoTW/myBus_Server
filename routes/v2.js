@@ -12,8 +12,19 @@ var sql_config = require('../sql_config');
 var db = mysql.createPool(sql_config.db);
 
 router.get('/route', function (req, res) {
-    res.set("Connection", "close");
-    res.send('this is route');
+    debug(JSON.stringify(req.query));
+    if (req.query.route) {
+        var query = `SELECT * FROM \`Bus_stop\` WHERE \`route\`=${Number(req.query.route)}`;
+        db.query(query).then((rows, field)=>{
+            res.send(JSON.stringify(rows));
+        }, (err)=>{
+            throw err;
+        });
+    } else {
+        var err = new Error('Too few arguments');
+        err.status = 400;
+        throw err;
+    }
 });
 
 router.get('/bus', function(req, res) {
