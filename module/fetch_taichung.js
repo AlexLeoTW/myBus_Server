@@ -12,14 +12,14 @@ function fetchTimeTable(routeNo) {
             .on('error', function(err) {
                 reject(err);
             }).on('response', function(response) {
-                console.log(`statusCode = ${response.statusCode}`); // 200
-                console.log(`content-type = ${response.headers['content-type']}`); // 'image/png'
+                //console.log(`statusCode = ${response.statusCode}`); // 200
+                //console.log(`content-type = ${response.headers['content-type']}`); // 'image/png'
             }).on('data', function(data) {
                 timetable += iconv.decode(data, 'utf-8');
             }).on('end', function() {
                 //console.log('Data:');
                 //console.log(`[${timetable}]`);
-                console.log('===========================================================');
+                //console.log('===========================================================');
                 resolve(timetable);
             });
     }).then((timetable) => {
@@ -137,11 +137,11 @@ function parseTimeListString(raw) {
 
     for (var k=0; k<list.length; k++) {
         var elementTime = list[k].split(':');
-        var timestamp = util.toTimestamp({
+        var timestamp = {
             hour: elementTime[0],
             minute: elementTime[1],
             local: '+8'
-        });
+        };
         result.push(timestamp);
     }
 
