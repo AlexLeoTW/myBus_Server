@@ -37,7 +37,7 @@ router.post('/register', (req, res) => {
     res.send('');
 });
 
-router.get('lineStatus', (req, res) => {
+router.get('/lineStatus', (req, res) => {
     res.set("Connection", "close");
     res.send('1');
 });
