@@ -37,6 +37,11 @@ router.post('/register', (req, res) => {
     res.send('');
 });
 
+router.get('lineStatus', (req, res) => {
+    res.set("Connection", "close");
+    res.send('1');
+});
+
 router.post('/reservation', (req, res) => {
     // INSERT INTO `Reservation_List`(`UUID`, `route`, `is_reverse`, `from_sn`, `to_sn`) VALUES ('B397A7F7',160,false,1,3)
     var query = "INSERT INTO `Reservation_List`(`UID`, `route`, `is_reverse`, `from_sn`, `to_sn`) ";
