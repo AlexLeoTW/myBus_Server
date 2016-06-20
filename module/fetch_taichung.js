@@ -4,6 +4,8 @@ const request = require('request');
 const jsdom = require("jsdom");
 const iconv = require('iconv-lite');
 const util = require('./util');
+const fs = require('fs');
+var jquery = fs.readFileSync("./jquery.js", "utf-8");
 var timetable = '';
 
 function fetchTimeTable(routeNo) {
@@ -48,7 +50,8 @@ function parseTimeTable(timetableHtml) {
     return new Promise((resolve, reject) => {
         jsdom.env(
             timetableHtml,
-            ["http://code.jquery.com/jquery.js"],
+            //["http://code.jquery.com/jquery.js"],
+            ['http://192.168.1.30/jquery.js'],
             function (err, window) {
                 timetable.route = Number(window.$(".table01 tbody:first tr td").text());
                 timetable.descritpion = window.$(".table01 tbody:nth-child(4) tr td").text().trim();
