@@ -18,89 +18,10 @@ function updateBusTable (route) {
             console.log(timetable);
             return walkThroughTimetable(timetable.timeList);
         }).then((tableEntry) => {
-            //console.log(tableEntry);
+            console.log(JSON.stringify(tableEntry));
             saveTimeTable(route, tableEntry);
         })
     );
-
-    /*taichung.fetchTimeTable(160).then((timetable) => {
-        console.log(timetable);
-        var key, key_l2, key_l3;
-        for (key in timetable.timeList) {    console.log('save');
-            console.log(`key = ${key}`);
-            if (key === 'weekday') {
-                for (key_l2 in timetable.timeList.weekday) {
-                    console.log(`\tkey_l2 = ${key_l2}`);
-                    if (key_l2 === 'foward') {
-                        for (key_l3 in timetable.timeList.weekday.foward) {
-                            console.log(`\t\tkey_l3 = ${key_l3}`);
-                            saveTimetableEntry(timetable.route, 'weekday', false,
-                                timetable.timeList.weekday.foward[key_l3].hour,
-                                timetable.timeList.weekday.fowaweekdayrd[key_l3].minute,
-                                timetable.timeList.weekday.foward[key_l3].local
-                            );
-                        }
-                    } else if (key_l2 === 'reverse') {
-                        for (key_l3 in timetable.timeList.weekday.reverse) {
-                            console.log(`\t\tkey_l3 = ${key_l3}`);
-                            saveTimetableEntry(timetable.route, 'weekday', true,
-                                timetable.timeList.weekday.reverse[key_l3].hour,
-                                timetable.timeList.weekday.reverse[key_l3].minute,
-                                timetable.timeList.weekday.reverse[key_l3].local
-                            );
-                        }
-                    }
-                }
-            } else if (key === 'weekend') {
-                for (key_l2 in timetable.timeList.weekend) {
-                    console.log(`\tkey_l2 = ${key_l2}`);
-                    if (key_l2 === 'foward') {
-                        for (key_l3 in timetable.timeList.weekend.reverse) {
-                            console.log(`\t\tkey_l3 = ${key_l3}`);
-                            saveTimetableEntry(timetable.route, 'weekend', false,
-                                timetable.timeList.weekend.reverse[key_l3].hour,
-                                timetable.timeList.weekend.reverse[key_l3].minute,
-                                timetable.timeList.weekend.reverse[key_l3].local
-                            );
-                        }
-                    } else if (key_l2 === 'reverse') {returnPlus123().then((x) => {
-                        console.log(x);
-                        return x + '123';
-                    }).then((x) => {
-                        console.log(x);
-                        returnPlus123(x);
-                    });
-
-                    function returnPlus123(x) {
-                        return new Promise((resolve, reject) => {
-                            resolve(x + '123');
-                        });
-                    }returnPlus123().then((x) => {
-                        console.log(x);
-                        return x + '123';
-                    }).then((x) => {
-                        console.log(x);
-                        returnPlus123(x);
-                    });
-
-                    function returnPlus123(x) {
-                        return new Promise((resolve, reject) => {
-                            resolve(x + '123');
-                        });
-                    }
-                        console.log(`\t\tkey_l3 = ${key_l3}`);
-                        saveTimetableEntry(timetable.route, 'weekend', true,
-                            timetable.timeList.weekend.reverse[key_l3].hour,
-                            timetable.timeList.weekend.reverse[key_l3].minute,
-                            timetable.timeList.weekend.reverse[key_l3].local
-                        );
-                    }
-                }
-            }
-        }
-    }, (err) => {
-        debug(err);
-    });*/
 }
 
 function isReverse (direction) {
@@ -160,7 +81,11 @@ function saveTimeTable(route, entryArray) {
         console.log(column);
         //saveTimetableEntry(route, column[1], isReverse(column[2]), column[3], column[4], Number(column[5]));
         //return saveTimeTable(route, entryArray);
-        return saveTimetableEntry(route, column[1], isReverse(column[2]), column[3], column[4], Number(column[5])).then(saveTimeTable(route, entryArray));
+        return saveTimetableEntry(
+            route, column[1], isReverse(column[2]), column[3], column[4],Number(column[5])
+        ).then(
+            saveTimeTable(route, entryArray)
+        );
         //(route, column[1], isReverse(column[2]), column[3], column[4], Number(column[5]));
     }
 }
@@ -226,3 +151,4 @@ function updateTimeListEntry(route, sn, timestamp) {
 
 module.exports.updateBusTable = updateBusTable;
 module.exports.updateBusArrival = updateBusArrival;
+module.exports.saveTimeTable = saveTimeTable;
