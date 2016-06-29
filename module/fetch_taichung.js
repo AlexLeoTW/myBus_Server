@@ -4,8 +4,8 @@ const request = require('request');
 const jsdom = require("jsdom");
 const iconv = require('iconv-lite');
 const util = require('./util');
-const fs = require('fs');
-var jquery = fs.readFileSync("./jquery.js", "utf-8");
+var fs = require("fs");
+var jquery = fs.readFileSync("../node_modules/jquery/dist/jquery.js", "utf-8");
 var timetable = '';
 
 function fetchTimeTable(routeNo) {
@@ -48,11 +48,10 @@ function parseTimeTable(timetableHtml) {
     var i = 0;      // more efficient
 
     return new Promise((resolve, reject) => {
-        jsdom.env(
-            timetableHtml,
-            //["http://code.jquery.com/jquery.js"],
-            ['http://192.168.1.30/jquery.js'],
-            function (err, window) {
+        jsdom.env({
+            html: timetableHtml,
+            src: [jquery],
+            done: function (err, window) {
                 timetable.route = Number(window.$(".table01 tbody:first tr td").text());
                 timetable.descritpion = window.$(".table01 tbody:nth-child(4) tr td").text().trim();
                 timetable.operator = window.$(".table01 tbody:nth-child(6) tr td").text().trim();
@@ -90,7 +89,7 @@ function parseTimeTable(timetableHtml) {
                 //console.log("JSON = [" + JSON.stringify(timetable) + "]");
                 resolve(timetable);
             }
-        );
+        });
     });
 }
 
@@ -249,8 +248,8 @@ function parseBusList(data) {
         var busObj = {};
         var chunks = rows[i].split('_,');
         busObj.plate_no = chunks[0];
-        busObj.longitude = Number(chunks[1]);
-        busObj.latitude = Number(chunks[2]);
+        busObj.longitude = Number(chunks[2]);
+        busObj.latitude = Number(chunks[3]);
         result.push(busObj);
     }
     return result;
