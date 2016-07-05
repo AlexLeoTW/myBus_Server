@@ -178,6 +178,7 @@ function fetchBusStatus(routeNo, fromNo, toNo) {
 
 function parseRealTime(dataString) {
     var realTimeData = {
+        route: 0,
         timeList: [
             //{ hour: 0, minute: 0 }
         ],
@@ -188,6 +189,7 @@ function parseRealTime(dataString) {
     var dataPack = dataString.split('_@');
     //console.log(dataPack[0]);
     //console.log(dataPack[1]);
+    realTimeData.route = routeNo;
     realTimeData.timeList = parsetArrivalList(dataPack[0]);
     realTimeData.busList = parseBusList(dataPack[1]);
 
@@ -253,6 +255,20 @@ function parseBusList(data) {
         result.push(busObj);
     }
     return result;
+}
+
+/* ========================================================================================================= */
+
+function mergeBusStatus(rawData) {
+    db.getConnection().then((connection) => {
+        connection.query(query).then((rows) => {
+            console.log('Delete OK');
+        }).catch((err) => {
+            console.log(err.code);
+        }).finally(() => {
+            db.releaseConnection(connection);
+        });
+    });
 }
 
 module.exports.fetchTimeTable = fetchTimeTable;
