@@ -152,7 +152,7 @@ function parseTimeListString(raw) {
 
 /* ========================================================================================================= */
 
-function fetchBusStatus(routeNo, fromNo, toNo) {
+function fetchBusStatus(routeNo, isReverse, stopCnt, lang) {
 
     return new Promise((resolve, reject) => {
         request.post({
@@ -160,8 +160,8 @@ function fetchBusStatus(routeNo, fromNo, toNo) {
             formData: {
                 //Type=GetFreshData&Lang=Cht&Data=160_%2C1_%2C9&BusType=0
                 Type: 'GetFreshData',
-                Lang: 'Cht',
-                Data: routeNo + '_,' + fromNo + '_,' + toNo,
+                Lang: `${lang?lang:'Cht'}`,
+                Data: `${routeNo}_,${isReverse?1:2}_,${stopCnt}`,
                 BusType: 0
             }},
             function optionalCallback(err, httpResponse, body) {
@@ -170,30 +170,28 @@ function fetchBusStatus(routeNo, fromNo, toNo) {
                 }
                 //console.log('routeNo = ', routeNo, 'fromNo = ', fromNo, 'toNo = ', toNo);
                 //console.log(JSON.stringify(parseRealTime(body)));
-                resolve(parseRealTime(body));
+                resolve(parseRealTime(body, routeNo, isReverse));
             }
         );
     });
 }
 
-function parseRealTime(dataString) {
+function parseRealTime(dataString, route, isReverse) {
     var realTimeData = {
-        route: 0,
+        route: route,
+        isReverse: isReverse,
         timeList: [
             //{ hour: 0, minute: 0 }
         ],
         busList: [
-            {plate_no: '', longitude: 0.0, latitude: 0.0}
+            //{plate_no: '', longitude: 0.0, latitude: 0.0}
         ]
     };
     var dataPack = dataString.split('_@');
-    //console.log(dataPack[0]);
-    //console.log(dataPack[1]);
-    realTimeData.route = routeNo;
+
     realTimeData.timeList = parsetArrivalList(dataPack[0]);
     realTimeData.busList = parseBusList(dataPack[1]);
 
-    //console.log('JSON = [' + JSON.stringify(realTimeData) + ']');
     return realTimeData;
 }
 
@@ -259,17 +257,99 @@ function parseBusList(data) {
 
 /* ========================================================================================================= */
 
-function mergeBusStatus(rawData) {
-    db.getConnection().then((connection) => {
-        connection.query(query).then((rows) => {
-            console.log('Delete OK');
-        }).catch((err) => {
-            console.log(err.code);
-        }).finally(() => {
-            db.releaseConnection(connection);
+function mergeBusStatus(rawData, busStops) {
+    var i = 0;
+    var result = {
+        route: rawData.route,
+        isReverse: rawData.isReverse,
+        stopInfo:[
+            // {sn:1, name:'高鐵臺中站', busStatus: {nextBus:{plate_no:'ABC-123', timestamp:"2016-07-05T08:25:34.489Z"}}}
+            // {sn:1, name:'高鐵臺中站', busStatus: null}}
+        ],
+        busInfo: [
+            // {plate_no:'ABC-123', closestStop: 2, nextStop:2, latitude:24.001, longitude:120.03451}
+        ]
+    };
+
+    for (i=0; i<rawData.timeList.length; i++) {
+        result.stopInfo.push({
+            sn: i,
+            name: busStops[0].name,
+            nextBus: {timestamp: rawData.timeList[i]}
         });
-    });
+    }
+
+    for (i=0; i<rawData.busList.length; i++) {
+        result.busInfo.push({
+            plate_no: rawData.busList[i].plate_no,
+            latitude: rawData.busList[i].latitude,
+            longitude: rawData.busList[i].longitude
+        });
+    }
+
+    for (i=0; i<result.busInfo.length; i++) {
+        result.busInfo[i].closestStop = closestStop(result.busInfo[i], busStops).sn;
+        result.busInfo[i].nextStop = squareLocate(result.busInfo[i], busStops).square[rawData.isReverse?0:1].sn;
+    }
+
+    console.log(JSON.stringify(result));
+}
+
+function squareLocate(coordinate, busStops, extraRange) {
+    var closestPoint = null;
+    var closestDistenceToSquare = 300000;
+    var square = [];
+
+    for (var i=0; i<busStops.length-1; i++) {
+        closestPoint = closestPointInSquare(coordinate, [busStops[i], busStops[i+1]]);
+        console.log(`closestPoint: ${JSON.stringify(closestPoint)}`);
+        var currentDistence = util.distenceInKm(coordinate, closestPoint);
+
+        if (currentDistence < closestDistenceToSquare) {
+            console.log(`distence = ${currentDistence}`);
+            closestDistenceToSquare = currentDistence;
+            square = [busStops[i], busStops[i+1]];
+        }
+    }
+
+    if (extraRange && closestDistenceToSquare > extraRange) {
+        return null;
+    } else {
+        return {square: square, distence: closestDistenceToSquare};
+    }
+}
+
+function closestPointInSquare(target, square) {
+    var closestPoint = {longitude: 0, latitude: 0};
+
+    for (var dimension in closestPoint) {
+        console.log(`dimension: ${dimension}`);
+        if (target[dimension] > Math.max(square[0][dimension], square[1][dimension])) {
+            closestPoint[dimension] = Math.max(square[0][dimension], square[1][dimension]);
+        } else if (target[dimension] < Math.min(square[0][dimension], square[1][dimension])) {
+            closestPoint[dimension] = Math.min(square[0][dimension], square[1][dimension]);
+        } else {
+            closestPoint[dimension] = target[dimension];
+        }
+    }
+
+    return closestPoint;
+}
+
+function closestStop(coordinate, busStops/*, range*/) {
+    var minDest = {sn: 1, distence: 300000};
+
+    for (var i=0; i<busStops.length; i++) {
+        var tempDistence = util.distenceInKm(coordinate, busStops[i]);
+        if (tempDistence < minDest.distence) {
+            minDest.sn = i+1;
+            minDest.distence = tempDistence;
+        }
+    }
+
+    return minDest;
 }
 
 module.exports.fetchTimeTable = fetchTimeTable;
 module.exports.fetchBusStatus = fetchBusStatus;
+module.exports.mergeBusStatus = mergeBusStatus;
