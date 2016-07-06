@@ -161,7 +161,7 @@ function fetchBusStatus(routeNo, isReverse, stopCnt, lang) {
                 //Type=GetFreshData&Lang=Cht&Data=160_%2C1_%2C9&BusType=0
                 Type: 'GetFreshData',
                 Lang: `${lang?lang:'Cht'}`,
-                Data: `${routeNo}_,${isReverse?1:2}_,${stopCnt}`,
+                Data: `${routeNo}_,${isReverse?2:1}_,${stopCnt}`,
                 BusType: 0
             }},
             function optionalCallback(err, httpResponse, body) {
