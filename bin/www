@@ -10,6 +10,7 @@ var ssl = require('../ssl_config');
 var http = require('http'),
     https = require('tls');
 var CronJob = require('cron').CronJob;
+var cronJobs = require('../module/cronJobs');
 
 /**
  * Get port from environment and store in Express.
@@ -100,3 +101,6 @@ function onListening() {
 /**
  * Add cron jobs.
  */
+new CronJob('0 */2 * * * *', function () {
+    cronJobs.updateRealTime();
+}, null, true, 'Asia/Taipei');
