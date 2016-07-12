@@ -4,9 +4,13 @@
 var mysql = require('promise-mysql');
 var sql_config = require('../sql_config');
 var db = mysql.createPool(sql_config.db);
+var debug = require('debug')('myBus:cron');
 
 var taichung = require('./fetch_taichung');
-const routeNumToFetch = [33, 160];
+const routeToFetch = [
+    {route: 160, isReverse: true},
+    {route: 160, isReverse: false}
+];
 
 db.on('enqueue', function () {
     console.log('Waiting for available connection slot');
@@ -104,51 +108,107 @@ function saveTimetableEntry (route, weekday, is_reverse, hour, minute, local) {
     });
 }
 
-function updateBusArrival () {
-    taichung.fetchBusStatus(160, 1, 9).then((timetable) => {
-        saveTimeList(160, timetable.timeList);
-    });
+function updateRealTime(pos) {
+    if (pos === undefined) {
+        updateRealTime(0);
+    } else if (pos < routeToFetch.length) {
+        var mergedData;
+        taichung.fetchBusStatus(routeToFetch[pos].route, routeToFetch[pos].isReverse, 9)
+        .then(mergeWithStopInfo).then((data) => {
+            mergedData = data;
+        }).then(() => {
+            saveBusArrival(mergedData);
+            saveBusStatus(mergedData);
+        });
 
-}
-
-function saveTimeList(route, array) {
-    for (var i=0; i<array.length; i++) {
-        saveTimeListEntry(route, i, array[i]);
+        updateRealTime(pos+1);
     }
 }
 
-function saveTimeListEntry(route, sn, timestamp) {
-    var query = `INSERT INTO \`Bus_arrival\` (\`route\`, \`sn\`, \`prediction\`) VALUES ('${route}', '${sn}', '${timestamp.toJSON()}')`;
-    console.log(query);
+function mergeWithStopInfo(arrivalTime) {
     return db.getConnection().then((connection) => {
-        connection.query(query).then((rows) => {
-            //console.log('\tquery ok');
+        return connection.query(`SELECT * FROM \`Bus_stop\` WHERE \`route\`=${arrivalTime.route} AND \`is_reverse\`=${arrivalTime.isReverse}`)
+        .then((rows) => {
+            return taichung.mergeBusStatus(arrivalTime, rows);
         }).catch((err) => {
-            if (err.code.includes('ER_DUP_ENTRY')) {
-                updateTimeListEntry(route, sn, timestamp);
-            } else {
-                console.log('\t' + err.code);
-            }
+            console.log(err);
         }).finally(() => {
             db.releaseConnection(connection);
         });
     });
 }
 
-function updateTimeListEntry(route, sn, timestamp) {
-    var query = `UPDATE \`Bus_arrival\` SET \`route\`=${route},\`sn\`=${sn},\`prediction\`='${timestamp.toJSON()}' WHERE \`route\`=${route} AND \`sn\`=${sn}`;
-    console.log(query);
-    return db.getConnection().then((connection) => {
-        connection.query(query).then((rows) => {
-            //console.log('\tquery ok');
-        }).catch((err) => {
-            console.log('\t' + err.code);
-        }).finally(() => {
-            db.releaseConnection(connection);
+function saveBusArrival(data, connection) {
+    //console.log(`saveBusArrival(${data}, ${connection})`);
+    if (data.stopInfo && data.stopInfo.length <= 0) {
+        db.releaseConnection(connection);
+    } else if (connection === undefined) {
+        //console.log(`open SQL connection...`);
+        return db.getConnection().then((connection) => {
+            clearBusArrival(data, connection).then(() => {
+                saveBusArrival(data, connection);
+            });
         });
+    } else {
+        var stopInfo = data.stopInfo.pop();
+        stopInfo.route = data.route;
+        stopInfo.isReverse = data.isReverse;
+        return saveBusArrivalEntry(stopInfo, connection).then(() => {
+            saveBusArrival(data, connection);
+        });
+    }
+}
+
+function clearBusArrival(config, connection) {
+    debug(`clearBusArrival(${config.route}, ${config.isReverse})`);
+    return connection.query(`DELETE FROM \`Bus_arrival\` WHERE \`route\`=${config.route} AND \`is_reverse\`=${config.isReverse}`)
+    .catch((err) => {
+        console.log(err);
+    });
+}
+
+function saveBusArrivalEntry(data, connection) {
+    debug(`saveBusArrivalEntry({route: ${data.route}, sn: ${data.sn}, isReverse: ${data.isReverse}})`);
+    //console.log(`saveBusArrivalEntry({route: ${data.route}, sn: ${data.sn}, isReverse: ${data.isReverse}})`);
+    return connection.query(`INSERT INTO \`Bus_arrival\`(\`route\`, \`sn\`, \`is_reverse\`, \`prediction\`) VALUES (${data.route},${data.sn},${data.isReverse},${JSON.stringify(data.nextBus.timestamp)})`)
+    .catch((err) => {
+        console.log(err);
+    });
+}
+
+function saveBusStatus(data, connection) {
+    //console.log(`saveBusStatus(${data}, ${connection})`);
+    if (data.busInfo && data.busInfo.length <= 0) {
+        db.releaseConnection(connection);
+    } else if (connection === undefined) {
+        return db.getConnection().then((connection) => {
+            saveBusStatus(data, connection);
+        });
+    } else {
+        var busData = data.busInfo.pop();
+        busData.route = data.route;
+        busData.isReverse = data.isReverse;
+
+        return updateBusStatus(busData, connection).then(() => {
+            saveBusStatus(data, connection);
+        });
+    }
+}
+
+function updateBusStatus(data, connection) {
+    debug(`updateBusStatus(${data.plate_no})`);
+    //console.log(`updateBusStatus(${data.plate_no})`);
+    return connection.query(`INSERT INTO \`Bus_status\`(\`plate_number\`, \`route\`, \`closestStop\`, \`nextStop\`, \`longitude\`, \`latitude\`, \`is_reverse\`) \
+    VALUES ('${data.plate_no}', ${data.route}, ${data.closestStop}, ${data.nextStop}, ${data.longitude}, ${data.latitude}, ${data.isReverse})`)
+    .catch((err) => {
+        if (err.code.includes('ER_DUP_ENTRY')) {
+            connection.query(`UPDATE \`Bus_status\` SET \`plate_number\`='${data.plate_no}',\`route\`=${data.route},\`closestStop\`=${data.closestStop},\`nextStop\`=${data.nextStop},\`longitude\`=${data.longitude},\`latitude\`=${data.latitude},\`is_reverse\`=${data.isReverse},\`last_update\`=CURRENT_TIMESTAMP \
+                            WHERE \`plate_number\`='${data.plate_no}'`);
+        } else {
+            console.log(err);
+        }
     });
 }
 
 module.exports.updateBusTable = updateBusTable;
-module.exports.updateBusArrival = updateBusArrival;
-module.exports.saveTimeTable = saveTimeTable;
+module.exports.updateRealTime = updateRealTime;
