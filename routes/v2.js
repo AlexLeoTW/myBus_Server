@@ -4,7 +4,7 @@
 var debug = require('debug')('myBus:rv2');
 var express = require('express');
 var router = express.Router();
-var busInfo = require('../Testing/businfo.js');
+var util = require('../module/util.js');
 
 // initial DB object
 var mysql = require('promise-mysql');
@@ -38,8 +38,39 @@ router.post('/register', (req, res) => {
 });
 
 router.get('/lineStatus', (req, res) => {
+    var query = '';
+
+    if (req.query.verbose === undefined || util.escapeBoolean(req.query.verbose) === true) {
+        query += 'SELECT * ';
+    } else {
+        query += 'SELECT `closestStop` ';
+    }
+
+    query += 'FROM `Bus_status` ';
+
+    if (req.query.route && req.query.is_reverse) {
+        query += `WHERE \`route\` = ${db.escape(req.query.route)} AND \`is_reverse\` = ${util.escapeBoolean(req.query.is_reverse)} `;
+    } else {
+        res.status(400);
+        res.render('error', {
+            message: 'Too few arguments',
+            error: {}
+        });
+    }
+
+    if (req.query.sn) {
+        query += `ORDER BY ABS(closestStop-${req.query.sn})`;
+    }
+
+    debug(query);
     res.set("Connection", "close");
-    res.send('1');
+    db.query(query).then((rows) => {
+        if (req.query.sn === undefined) {
+            res.send(JSON.stringify(rows));
+        } else {
+            res.send(JSON.stringify(rows[0]));
+        }
+    });
 });
 
 router.post('/reservation', (req, res) => {
