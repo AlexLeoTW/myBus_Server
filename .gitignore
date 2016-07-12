@@ -45,3 +45,4 @@ module/cronJobs_test.js
 module/utils_test.js
 
 # Local Scripts
+start.sh
