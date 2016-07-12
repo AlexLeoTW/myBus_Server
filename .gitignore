@@ -43,3 +43,5 @@ Testing/fetch_taichung_rev1/data2.txt
 module/fetch_taichung_test.js
 module/cronJobs_test.js
 module/utils_test.js
+
+# Local Scripts
