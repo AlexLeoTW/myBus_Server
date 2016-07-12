@@ -117,6 +117,7 @@ function updateRealTime(pos) {
         .then(mergeWithStopInfo).then((data) => {
             mergedData = data;
         }).then(() => {
+            debug(`Update realtime data for route ${mergedData.route} ${mergedData.isReverse?'foward':'reverse'}`);
             saveBusArrival(mergedData);
             saveBusStatus(mergedData);
         });
@@ -160,7 +161,7 @@ function saveBusArrival(data, connection) {
 }
 
 function clearBusArrival(config, connection) {
-    debug(`clearBusArrival(${config.route}, ${config.isReverse})`);
+    //debug(`clearBusArrival(${config.route}, ${config.isReverse})`);
     return connection.query(`DELETE FROM \`Bus_arrival\` WHERE \`route\`=${config.route} AND \`is_reverse\`=${config.isReverse}`)
     .catch((err) => {
         console.log(err);
@@ -168,7 +169,7 @@ function clearBusArrival(config, connection) {
 }
 
 function saveBusArrivalEntry(data, connection) {
-    debug(`saveBusArrivalEntry({route: ${data.route}, sn: ${data.sn}, isReverse: ${data.isReverse}})`);
+    //debug(`saveBusArrivalEntry({route: ${data.route}, sn: ${data.sn}, isReverse: ${data.isReverse}})`);
     //console.log(`saveBusArrivalEntry({route: ${data.route}, sn: ${data.sn}, isReverse: ${data.isReverse}})`);
     return connection.query(`INSERT INTO \`Bus_arrival\`(\`route\`, \`sn\`, \`is_reverse\`, \`prediction\`) VALUES (${data.route},${data.sn},${data.isReverse},${JSON.stringify(data.nextBus.timestamp)})`)
     .catch((err) => {
@@ -196,7 +197,7 @@ function saveBusStatus(data, connection) {
 }
 
 function updateBusStatus(data, connection) {
-    debug(`updateBusStatus(${data.plate_no})`);
+    //debug(`updateBusStatus(${data.plate_no})`);
     //console.log(`updateBusStatus(${data.plate_no})`);
     return connection.query(`INSERT INTO \`Bus_status\`(\`plate_number\`, \`route\`, \`closestStop\`, \`nextStop\`, \`longitude\`, \`latitude\`, \`is_reverse\`) \
     VALUES ('${data.plate_no}', ${data.route}, ${data.closestStop}, ${data.nextStop}, ${data.longitude}, ${data.latitude}, ${data.isReverse})`)

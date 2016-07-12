@@ -52,7 +52,6 @@ function distenceInKm (location1, location2)/*(lon1, lat1, lon2, lat2)*/ {
 /*
     Data Escape
 */
-
 function escapeBoolean(userInput) {
     if (isNaN(userInput)) {
         userInput = userInput.substring(0, 5);
