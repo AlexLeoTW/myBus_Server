@@ -273,8 +273,8 @@ function mergeBusStatus(rawData, busStops) {
 
     for (i=0; i<rawData.timeList.length; i++) {
         result.stopInfo.push({
-            sn: i,
-            name: busStops[0].name,
+            sn: i+1,
+            name: busStops[i].name,
             nextBus: {timestamp: rawData.timeList[i]}
         });
     }
@@ -292,7 +292,7 @@ function mergeBusStatus(rawData, busStops) {
         result.busInfo[i].nextStop = squareLocate(result.busInfo[i], busStops).square[rawData.isReverse?0:1].sn;
     }
 
-    console.log(JSON.stringify(result));
+    return result;
 }
 
 function squareLocate(coordinate, busStops, extraRange) {
@@ -302,11 +302,11 @@ function squareLocate(coordinate, busStops, extraRange) {
 
     for (var i=0; i<busStops.length-1; i++) {
         closestPoint = closestPointInSquare(coordinate, [busStops[i], busStops[i+1]]);
-        console.log(`closestPoint: ${JSON.stringify(closestPoint)}`);
+        // console.log(`closestPoint: ${JSON.stringify(closestPoint)}`);
         var currentDistence = util.distenceInKm(coordinate, closestPoint);
 
         if (currentDistence < closestDistenceToSquare) {
-            console.log(`distence = ${currentDistence}`);
+            // console.log(`distence = ${currentDistence}`);
             closestDistenceToSquare = currentDistence;
             square = [busStops[i], busStops[i+1]];
         }
@@ -323,7 +323,7 @@ function closestPointInSquare(target, square) {
     var closestPoint = {longitude: 0, latitude: 0};
 
     for (var dimension in closestPoint) {
-        console.log(`dimension: ${dimension}`);
+        // console.log(`dimension: ${dimension}`);
         if (target[dimension] > Math.max(square[0][dimension], square[1][dimension])) {
             closestPoint[dimension] = Math.max(square[0][dimension], square[1][dimension]);
         } else if (target[dimension] < Math.min(square[0][dimension], square[1][dimension])) {
