@@ -5,7 +5,7 @@ const jsdom = require("jsdom");
 const iconv = require('iconv-lite');
 const util = require('./util');
 var fs = require("fs");
-var jquery = fs.readFileSync("../node_modules/jquery/dist/jquery.js", "utf-8");
+var jquery = fs.readFileSync("./node_modules/jquery/dist/jquery.js", "utf-8");
 var timetable = '';
 
 function fetchTimeTable(routeNo) {
