@@ -179,11 +179,15 @@ function saveBusArrivalEntry(data, connection) {
 
 function saveBusStatus(data, connection) {
     //console.log(`saveBusStatus(${data}, ${connection})`);
-    if (data.busInfo && data.busInfo.length <= 0) {
-        db.releaseConnection(connection);
+    if (data.busInfo !== null || data.busInfo.length <= 0) {
+        if (connection !== undefined) {
+            db.releaseConnection(connection);
+        }
     } else if (connection === undefined) {
         return db.getConnection().then((connection) => {
-            saveBusStatus(data, connection);
+            return clearBusOutdated(connection).then(() => {
+                saveBusStatus(data, connection);
+            });
         });
     } else {
         var busData = data.busInfo.pop();
@@ -194,6 +198,11 @@ function saveBusStatus(data, connection) {
             saveBusStatus(data, connection);
         });
     }
+}
+
+function clearBusOutdated(connection) {
+    connection.query(`DELETE FROM \`Bus_status\` WHERE ABS(\`last_update\`-CURRENT_TIMESTAMP) > 1800`)
+    .catch((err) => {console.log(err);});
 }
 
 function updateBusStatus(data, connection) {

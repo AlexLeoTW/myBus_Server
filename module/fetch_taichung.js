@@ -279,6 +279,10 @@ function mergeBusStatus(rawData, busStops) {
         });
     }
 
+    if (rawData.busList === null || rawData.busList === undefined) {
+        return result;
+    }
+
     for (i=0; i<rawData.busList.length; i++) {
         result.busInfo.push({
             plate_no: rawData.busList[i].plate_no,
