@@ -179,7 +179,7 @@ function saveBusArrivalEntry(data, connection) {
 
 function saveBusStatus(data, connection) {
     //console.log(`saveBusStatus(${data}, ${connection})`);
-    if (data.busInfo !== null || data.busInfo.length <= 0) {
+    if (data.busInfo === null || data.busInfo.length <= 0) {
         if (connection !== undefined) {
             db.releaseConnection(connection);
         }
@@ -201,7 +201,8 @@ function saveBusStatus(data, connection) {
 }
 
 function clearBusOutdated(connection) {
-    connection.query(`DELETE FROM \`Bus_status\` WHERE ABS(\`last_update\`-CURRENT_TIMESTAMP) > 1800`)
+    //debug("clear outdated bus");
+    return connection.query(`DELETE FROM \`Bus_status\` WHERE ABS(\`last_update\`-CURRENT_TIMESTAMP) > 1800`)
     .catch((err) => {console.log(err);});
 }
 
