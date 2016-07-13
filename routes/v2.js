@@ -65,10 +65,12 @@ router.get('/lineStatus', (req, res) => {
     debug(query);
     res.set("Connection", "close");
     db.query(query).then((rows) => {
-        if (req.query.sn === undefined) {
+        if (rows.length === 0) {
+            res.send(JSON.stringify(null));
+        } else if (req.query.sn === undefined) {
             res.send(JSON.stringify(rows));
         } else {
-            res.send(JSON.stringify(rows[0]));
+            res.send(JSON.stringify(rows[0].closestStop));
         }
     });
 });
