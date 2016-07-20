@@ -238,7 +238,9 @@ function parseBusList(data) {
         //{plate_no: '', longitude: 0.0, latitude: 0.0}
     ];
 
-    if ( data.toUpperCase().localeCompare('NoData'.toUpperCase()) === 0) {
+    if (data === null) {
+        return null;
+    } else if ( data.toUpperCase().localeCompare('NoData'.toUpperCase()) === 0) {
         return null;
     }
 
