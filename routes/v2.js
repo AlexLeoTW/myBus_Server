@@ -37,6 +37,25 @@ router.post('/register', (req, res) => {
     res.send('');
 });
 
+router.get('/busArrival', (req, res) => {
+    if (req.query.route === undefined) {
+        res.status(400);
+        res.render('error', {
+            message: 'Too few arguments (route)',
+            error: {}
+        });
+    } else {
+        var query = `SELECT * FROM \`Bus_arrival\` WHERE \`route\` = ${req.query.route}`;
+        db.query(query).then((rows) => {
+            if (rows.length === 0) {
+                res.send(JSON.stringify(null));
+            } else {
+                res.send(JSON.stringify(rows));
+            }
+        });
+    }
+});
+
 router.get('/lineStatus', (req, res) => {
     var query = '';
 
@@ -74,6 +93,7 @@ router.get('/lineStatus', (req, res) => {
         }
     });
 });
+
 
 router.post('/reservation', (req, res) => {
     // INSERT INTO `Reservation_List`(`UUID`, `route`, `is_reverse`, `from_sn`, `to_sn`) VALUES ('B397A7F7',160,false,1,3)
@@ -122,5 +142,4 @@ router.post('/reservation', (req, res) => {
         throw err;
     }
 });
-
 module.exports = router;
