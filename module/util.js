@@ -1,8 +1,10 @@
 /*jshint esversion: 6 */
 
 /*
-    time = {hour: 12, minute: 12, local: +8};
+    Time
 */
+// time = {hour: 12, minute: 12, local: +8};
+// TODO: rename -> toJsDate
 function toTimestamp(time) {
     var timestamp = new Date();
 
@@ -19,6 +21,18 @@ function toTimestamp(time) {
     }
 
     return timestamp;
+}
+
+// convert JavaScript Date Object to SQL timestamp
+// ex. '2016-07-06 14:30:00:+00:00'
+// TODO: append onto prototype chain
+function toSqlTimestamp(date) {
+    if (date.getUTCFullYear) {
+        return `${date.getUTCFullYear()}-${date.getUTCMonth()}-${date.getUTCDate()} ${date.getUTCHours()}:${date.getUTCMinutes()}:${date.getUTCSeconds()}:+00:00`;
+    } else {
+        return '1970-01-01 00:00:00:+00:00';
+    }
+
 }
 
 
@@ -75,6 +89,7 @@ function escapeBoolean(userInput) {
 }
 
 module.exports.toTimestamp = toTimestamp;
+module.exports.toSqlTimestamp = toSqlTimestamp;
 module.exports.earthRadiusKm = earthRadiusKm;
 module.exports.distenceInKm = distenceInKm;
 module.exports.escapeBoolean = escapeBoolean;
