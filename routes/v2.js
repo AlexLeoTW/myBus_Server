@@ -45,7 +45,10 @@ router.get('/busArrival', (req, res) => {
             error: {}
         });
     } else {
-        var query = `SELECT * FROM \`Bus_arrival\` WHERE \`route\` = ${req.query.route}`;
+        var query = `SELECT * FROM \`Bus_arrival\` WHERE \`route\` = ${req.query.route} `;
+        if (req.query.is_reverse !== undefined) {
+            query += `AND \`is_reverse\` = ${util.escapeBoolean(req.query.is_reverse)}`;
+        }
         db.query(query).then((rows) => {
             if (rows.length === 0) {
                 res.send(JSON.stringify(null));
