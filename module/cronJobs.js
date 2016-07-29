@@ -5,6 +5,7 @@ var mysql = require('promise-mysql');
 var sql_config = require('../sql_config');
 var db = mysql.createPool(sql_config.db);
 var debug = require('debug')('myBus:cron');
+var util = require('./util');
 
 var taichung = require('./fetch_taichung');
 const routeToFetch = [
@@ -171,7 +172,7 @@ function clearBusArrival(config, connection) {
 function saveBusArrivalEntry(data, connection) {
     //debug(`saveBusArrivalEntry({route: ${data.route}, sn: ${data.sn}, isReverse: ${data.isReverse}})`);
     //console.log(`saveBusArrivalEntry({route: ${data.route}, sn: ${data.sn}, isReverse: ${data.isReverse}})`);
-    return connection.query(`INSERT INTO \`Bus_arrival\`(\`route\`, \`sn\`, \`is_reverse\`, \`prediction\`) VALUES (${data.route},${data.sn},${data.isReverse},${JSON.stringify(data.nextBus.timestamp)})`)
+    return connection.query(`INSERT INTO \`Bus_arrival\`(\`route\`, \`sn\`, \`is_reverse\`, \`prediction\`) VALUES (${data.route},${data.sn},${data.isReverse},'${util.toSqlTimestamp(data.nextBus.timestamp)}')`)
     .catch((err) => {
         console.log(err);
     });
@@ -221,5 +222,42 @@ function updateBusStatus(data, connection) {
     });
 }
 
+function updateRouteList() {
+    var routeList = taichung.fetchRouteList();
+    var routeNameList = [];
+
+    for (var key in routeList) {
+        routeNameList.push(key);
+    }
+
+    return db.getConnection().then((connection) => {
+
+    });
+}
+
+function saveRouteList(routeNameList, data, connection) {
+    if (routeNameList.length > 0) {
+        var key = routeNameList.pop();
+        var entry = data[key];
+        entry.routeNo = key;
+        return saveRouteEntry().then(saveRouteList(routeNameList, data, connection));
+    } else {
+        return null;
+    }
+}
+
+function saveRouteEntry(entry, connection) {
+    return connection.query(`INSERT INTO \`Route_info\` (\`route\`, \`name\`, \`start\`, \`end\`, \`map\`) \
+    VALUES ('${entry.routeNo}', '${entry.name}', '${entry.from}', '${entry.to}', '${entry.map}');`).then(() => {
+        saveRouteOperator(entry.routeNo, entry.operator, connection);
+    });
+}
+
+function saveRouteOperator(routeNo, operator, connection) {
+
+    //return connection.query(`INSERT INTO \`Route_operator\` (\`routeNo\`, \`operator\`) VALUES ('${routeNo}', '${}');`);
+}
+
 module.exports.updateBusTable = updateBusTable;
 module.exports.updateRealTime = updateRealTime;
+module.exports.updateRouteList = updateRouteList;
