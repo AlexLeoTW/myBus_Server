@@ -218,7 +218,7 @@ function parseArrivalEntry(entry) {
         if (countDown === -3) {
             return '末班車已駛離';
         } else {
-            var milli = new Date().valueOf() - countDown*60*1000;
+            var milli = new Date().valueOf() + countDown*60*1000;
             return new Date(milli);
         }
     } else if (entry[1] && entry[1] !== 'null') {
