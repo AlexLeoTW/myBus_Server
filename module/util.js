@@ -28,7 +28,7 @@ function toTimestamp(time) {
 // TODO: append onto prototype chain
 function toSqlTimestamp(date) {
     if (date.getUTCFullYear) {
-        return `${date.getUTCFullYear()}-${date.getUTCMonth()}-${date.getUTCDate()} ${date.getUTCHours()}:${date.getUTCMinutes()}:${date.getUTCSeconds()}:+00:00`;
+        return `${date.getUTCFullYear()}-${date.getUTCMonth() + 1}-${date.getUTCDate()} ${date.getUTCHours()}:${date.getUTCMinutes()}:${date.getUTCSeconds()}:+00:00`;
     } else {
         return '1970-01-01 00:00:00:+00:00';
     }
