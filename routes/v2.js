@@ -11,7 +11,7 @@ var mysql = require('promise-mysql');
 var sql_config = require('../sql_config');
 var db = mysql.createPool(sql_config.db);
 
-router.get('/route', function (req, res) {
+router.get('/route', (req, res) => {
     debug(JSON.stringify(req.query));
     if (req.query.route) {
         var query = `SELECT * FROM \`Bus_stop\` WHERE \`route\`=${Number(req.query.route)}`;
@@ -27,7 +27,7 @@ router.get('/route', function (req, res) {
     }
 });
 
-router.get('/bus', function(req, res) {
+router.get('/bus', (req, res) => {
     res.set("Connection", "close");
     res.send('this is bus');
 });
@@ -165,7 +165,6 @@ router.post('/environment', (req, res) => {
             `\`timestamp\`=CURRENT_TIMESTAMP ` +
             `WHERE \`route\`='${req.body.route}' AND \`sn\`='${req.body.sn}' AND \`is_reverse\`='${util.escapeBoolean(req.body.sn)}'`;
 
-    console.log(query);
     db.query(query).then((result) => {
         if (result.affectedRows <= 0) {
             query = `INSERT INTO \`Weather\` (\`route\`, \`sn\`, \`is_reverse\`, \`timestamp\`, ` +
@@ -175,7 +174,7 @@ router.post('/environment', (req, res) => {
                     `${req.body.humidity ? `'${req.body.humidity}', ` : ''}` +
                     `${req.body.temp ? `'${req.body.temp}'` : ''}` +
                     `)`;
-            console.log(query);
+
             return db.query(query).then(() => {
                 res.send('OK');
             });
