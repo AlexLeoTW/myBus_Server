@@ -97,7 +97,6 @@ router.get('/lineStatus', (req, res) => {
     });
 });
 
-
 router.post('/reservation', (req, res) => {
     // INSERT INTO `Reservation_List`(`UUID`, `route`, `is_reverse`, `from_sn`, `to_sn`) VALUES ('B397A7F7',160,false,1,3)
     var query = "INSERT INTO `Reservation_List`(`UID`, `route`, `is_reverse`, `from_sn`, `to_sn`) ";
@@ -145,4 +144,45 @@ router.post('/reservation', (req, res) => {
         throw err;
     }
 });
+
+router.post('/environment', (req, res) => {
+    // INSERT INTO `Weather` (`route`, `sn`, `is_reverse`, `humidity`, `temperature`, `timestamp`) VALUES ('160', '2', '0', '50', '32', CURRENT_TIMESTAMP);
+    // UPDATE `Weather` SET `route`='160',`sn`='2',`is_reverse`='true',`humidity`='50',`temperature`='32',`timestamp`=NOW() WHERE `route`='160' AND `sn`='2' AND `is_reverse`='true'
+    var query = '';
+
+    if (req.body.route === undefined || req.body.sn === undefined || req.body.is_reverse === undefined) {
+        res.status(400);
+        res.render('error', {
+            message: 'Too few arguments',
+            error: 'route, sn, is_reverse are required'
+        });
+        return;
+    }
+
+    query = `UPDATE \`Weather\` SET ` +
+            `${req.body.humidity ? `\`humidity\`='${req.body.humidity}',` : ''}` +
+            `${req.body.temp ? `\`temperature\`='${req.body.temp}',` : ''}` +
+            `\`timestamp\`=CURRENT_TIMESTAMP ` +
+            `WHERE \`route\`='${req.body.route}' AND \`sn\`='${req.body.sn}' AND \`is_reverse\`='${util.escapeBoolean(req.body.sn)}'`;
+
+    console.log(query);
+    db.query(query).then((result) => {
+        if (result.affectedRows <= 0) {
+            query = `INSERT INTO \`Weather\` (\`route\`, \`sn\`, \`is_reverse\`, \`timestamp\`, ` +
+                    `${req.body.humidity ? '`humidity`, ': ''}` +
+                    `${req.body.tempe ? '`temperature`, ': ''}` +
+                    `) VALUES ('${req.body.route}', '${req.body.sn}', '${req.body.is_reverse}', CURRENT_TIMESTAMP, ` +
+                    `${req.body.humidity ? `'${req.body.humidity}', ` : ''}` +
+                    `${req.body.temp ? `'${req.body.temp}'` : ''}` +
+                    `)`;
+            console.log(query);
+            return db.query(query).then(() => {
+                res.send('OK');
+            });
+        } else {
+            res.send('OK');
+        }
+    });
+});
+
 module.exports = router;
