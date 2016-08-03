@@ -220,39 +220,64 @@ function updateBusStatus(data, connection) {
 }
 
 function updateRouteList() {
-    var routeList = taichung.fetchRouteList();
-    var routeNameList = [];
-
-    for (var key in routeList) {
-        routeNameList.push(key);
-    }
-
-    return db.getConnection().then((connection) => {
-
+    return taichung.fetchRouteList().then((routeList) => {
+        return saveRouteList();
     });
 }
 
-function saveRouteList(routeNameList, data, connection) {
-    if (routeNameList.length > 0) {
-        var key = routeNameList.pop();
-        var entry = data[key];
+function saveRouteList(routeList, connection) {
+    if (routeList.keys().length > 0 && connection === undefined) {
+        return db.getConnection((connection) => {
+            saveRouteList(routeNameList, connection);
+        });
+    } else if (routeList.keys().length > 0) {
+        var key = routeList.keys()[0];
+        var entry = routeList[key];
         entry.routeNo = key;
-        return saveRouteEntry().then(saveRouteList(routeNameList, data, connection));
+        delete routeList[key];
+        return deleteRouteEntry(connection).then(() => {
+            saveRouteEntry(entry, connection);
+        }).then(() => {
+            saveRouteList(routeList, connection);
+        });
     } else {
-        return null;
+        if (connection !== undefined) {
+            db.releaseConnection(connection);
+        } else {
+            return;
+        }
     }
 }
 
 function saveRouteEntry(entry, connection) {
-    return connection.query(`INSERT INTO \`Route_info\` (\`route\`, \`name\`, \`start\`, \`end\`, \`map\`) \
-    VALUES ('${entry.routeNo}', '${entry.name}', '${entry.from}', '${entry.to}', '${entry.map}');`).then(() => {
+    return deleteRouteEntry(connection).then(() => {
+        connection.query(`INSERT INTO \`Route_info\` (\`route\`, \`name\`, \`start\`, \`end\`, \`map\`) ` +
+            `VALUES ('${entry.routeNo}', '${entry.name}', '${entry.from}', '${entry.to}', '${entry.map}');`);
+    }).then(() => {
+        deleteRouteOperator(entry.routeNo, connection);
+    }).then(() => {
         saveRouteOperator(entry.routeNo, entry.operator, connection);
     });
 }
 
-function saveRouteOperator(routeNo, operator, connection) {
+function deleteRouteEntry(connection) {
+    return connection.query('DELETE FROM `Route_info`');
+}
 
-    //return connection.query(`INSERT INTO \`Route_operator\` (\`routeNo\`, \`operator\`) VALUES ('${routeNo}', '${}');`);
+function saveRouteOperator(routeNo, operators, connection) {
+    if (operator.length > 0) {
+        //return connection.query(`INSERT INTO \`Route_operator\` (\`routeNo\`, \`operator\`) VALUES ('${routeNo}', '${}');`);
+        var operatorName = operators.pop();
+        return query(`INSERT INTO \`Route_operator\` (\`routeNo\`, \`operator \`) VALUES ('${routeNo}', 'operatorName')`).then(() => {
+            saveRouteOperator(routeNo, operators, connection);
+        });
+    } else {
+        return;
+    }
+}
+
+function deleteRouteOperator(routeNo, connection) {
+    return connection.query(`DELETE FROM \`Route_operator\` WHERE \`routeNo\`=${routeNo}`);
 }
 
 module.exports.updateBusTable = updateBusTable;
