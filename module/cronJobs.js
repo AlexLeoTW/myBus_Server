@@ -83,7 +83,6 @@ function saveTimeTable(route, entryArray) {
     if (entryArray.length > 0) {
         var entry = entryArray.pop();
         var column = entry.split('.');
-        console.log(column);
         //saveTimetableEntry(route, column[1], isReverse(column[2]), column[3], column[4], Number(column[5]));
         //return saveTimeTable(route, entryArray);
         return saveTimetableEntry(
@@ -97,7 +96,6 @@ function saveTimeTable(route, entryArray) {
 
 function saveTimetableEntry (route, weekday, is_reverse, hour, minute, local) {
     var query = `INSERT INTO \`Time_table\` (\`route\`, \`weekday\`, \`hour\`, \`minute\`, \`local\`) VALUES ('${route}', '${weekday}', '${hour}', '${minute}', '${local}')`;
-    console.log(query);
     return db.getConnection().then((connection) => {
         connection.query(query).then((rows) => {
             console.log('\tquery ok');
@@ -145,7 +143,6 @@ function saveBusArrival(data, connection) {
     if (data.stopInfo && data.stopInfo.length <= 0) {
         db.releaseConnection(connection);
     } else if (connection === undefined) {
-        //console.log(`open SQL connection...`);
         return db.getConnection().then((connection) => {
             clearBusArrival(data, connection).then(() => {
                 saveBusArrival(data, connection);
