@@ -355,6 +355,99 @@ function closestStop(coordinate, busStops/*, range*/) {
     return minDest;
 }
 
+/* ========================================================================================================= */
+
+function fetchRouteList(conf) {
+    return new Promise((resolve, reject) => {
+        request.post({
+            url:'http://citybus.taichung.gov.tw/iTravel/RealRoute/aspx/RealRoute.ashx',
+            formData: {
+                Type: 'GetSelect',
+                Lang: `${conf?(conf.lang?conf.lang:'Cht'):'Cht'}`
+            }},
+            function optionalCallback(err, httpResponse, body) {
+                if (!err && httpResponse.statusCode == 200) {
+                    resolve(parseRouteList(body));
+                } else {
+                    reject(err);
+                }
+            }
+        );
+    });
+}
+
+function parseRouteList(dataString) {
+    var result = {
+        //'160': {operator: "和欣客運", descritpion: "高鐵臺中站  -  僑光科技大學", start: "高鐵臺中站", end: "僑光科技大學", pic: "http://citybus.taichung.gov.tw/cms/api/route/160/map/18/image"}
+    };
+    var operator = {};
+    var route = {};
+    var dataPack = dataString.split('_@');
+
+    operator = buildOperatorMap(dataPack[0]);
+    route = buildRouteObj(dataPack[1]);
+
+    for (var i=0; i<route.length; i++) {
+        var routeNo = route[i].no;
+
+        if (result.hasOwnProperty(routeNo)) {
+            result[routeNo].operator.push(operator.getName(route[i].operator));
+        } else {
+            result[routeNo] = route[i];
+            delete result[routeNo].no;
+            result[routeNo].operator = [operator.getName(result[routeNo].operator)];
+        }
+    }
+
+    return result;
+}
+
+function buildOperatorMap(dataString) {
+    var result = {
+        getName: function (id) {
+            if (this.hasOwnProperty(id)) {
+                return this[id];
+            } else {
+                return 'Unknown';
+            }
+        }
+    };
+    var data = dataString.split('_|');
+
+    for (var i = 0; i< data.length; i++) {
+        var operator = data[i].split('_,');
+        result[operator[0]] = operator[1];
+    }
+
+    return result;
+}
+
+function buildRouteObj(dataString) {
+    var result = [
+        //{no: 160, operator: 'Hu-shin', name: '高鐵臺中站  -  僑光科技大學', from: '高鐵臺中站', to: '僑光科技大學', map: 'http://citybus.taichung.gov.tw/cms/api/route/160/map/18/image_|'},
+    ];
+    var routeArray = dataString.split('_|');
+
+    for (var i=0; i<routeArray.length; i++) {
+        var route = routeArray[i].split('_,');
+        result.push({
+            no: route[2],
+            operator: route[1],
+            name: route[3],
+            from: route[4],
+            to: route[5],
+            map: route.length>6?route[6]:null
+        });
+    }
+
+    result.sort((x, y) => {
+        return x.no.localeCompare(y.no); // TODO: fix sort
+    });
+
+    return result;
+}
+
 module.exports.fetchTimeTable = fetchTimeTable;
 module.exports.fetchBusStatus = fetchBusStatus;
 module.exports.mergeBusStatus = mergeBusStatus;
+module.exports.fetchRouteList = fetchRouteList;
