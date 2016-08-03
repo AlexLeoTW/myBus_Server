@@ -165,12 +165,11 @@ function fetchBusStatus(routeNo, isReverse, stopCnt, lang) {
                 BusType: 0
             }},
             function optionalCallback(err, httpResponse, body) {
-                if (err) {
+                if (!err && httpResponse.statusCode == 200) {
+                    resolve(parseRealTime(body, routeNo, isReverse));
+                } else {
                     reject(err);
                 }
-                //console.log('routeNo = ', routeNo, 'fromNo = ', fromNo, 'toNo = ', toNo);
-                //console.log(JSON.stringify(parseRealTime(body)));
-                resolve(parseRealTime(body, routeNo, isReverse));
             }
         );
     });
@@ -200,7 +199,7 @@ function parsetArrivalList(data) {
         //{hour: 0, minute: 0}
     ];
     var rows = data.split('_|');
-
+    console.log(data);
     for (var i=0; i<rows.length; i++) {
         //var time = (rows[i].split('_,'))[1].split(':');
          result.push(parseArrivalEntry(rows[i]));
