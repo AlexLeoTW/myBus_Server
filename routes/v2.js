@@ -1,4 +1,6 @@
 /*jslint esversion: 6, node: true, nomen: true, unparam: true */
+// TODO: enhance readability using res.format() https://expressjs.com/en/4x/api.html#res.format
+
 'use strict';
 
 var debug = require('debug')('myBus:rv2');
