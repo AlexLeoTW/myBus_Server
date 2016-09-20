@@ -7,6 +7,7 @@ var debug = require('debug')('myBus:rv2');
 var express = require('express');
 var router = express.Router();
 var util = require('../module/util.js');
+var passport = require('passport');
 
 // initial DB object
 var mysql = require('promise-mysql');
@@ -185,5 +186,12 @@ router.post('/environment', (req, res) => {
         }
     });
 });
+
+router.get('/account/:uuid',
+    passport.authenticate('basic',{session: false}),
+    (req, res) => {
+        res.send(JSON.stringify(req.user));
+    }
+);
 
 module.exports = router;

@@ -12,6 +12,9 @@ var routes = require('./routes/index');
 var routes_v2 = require('./routes/v2');
 var users = require('./routes/users');
 
+var passport = require('passport');
+var LocalStrategy = require('passport-local').Strategy;
+
 var app = express();
 
 // view engine setup
@@ -24,11 +27,27 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+// Passport Initialize
+/*app.use(require('express-session')({
+    secret: 'pKqzbD0oz359',
+    resave: false,
+    saveUninitialized: false
+}));*/
+app.use(passport.initialize());
+//app.use(passport.session());
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', routes);
 app.use('/v2', routes_v2);
 app.use('/users', users);
+
+// passport config
+var Account = require('./models/local_auth');
+passport.use(new LocalStrategy(Account.authenticate()));
+passport.serializeUser(Account.serializeUser());
+passport.deserializeUser(Account.deserializeUser());
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

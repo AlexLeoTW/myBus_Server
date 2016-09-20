@@ -41,6 +41,7 @@ Testing/fetch_taichung_rev1/result.txt
 Testing/fetch_taichung_rev1/data.txt
 Testing/fetch_taichung_rev1/data2.txt
 Testing/passport.app.js
+Testing/passport.route.js
 module/fetch_taichung_test.js
 module/cronJobs_test.js
 module/utils_test.js
