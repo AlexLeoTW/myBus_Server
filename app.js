@@ -44,7 +44,7 @@ app.use('/v2', routes_v2);
 app.use('/users', users);
 
 // passport config
-var Account = require('./models/local_auth');
+var Account = require('./module/local_auth.js');
 passport.use(new LocalStrategy(Account.authenticate()));
 passport.serializeUser(Account.serializeUser());
 passport.deserializeUser(Account.deserializeUser());
