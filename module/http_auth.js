@@ -2,19 +2,14 @@
 
 'use strict';
 
-// exports module
-var auth = {};
-
-const crypto = require('crypto');
-
-//passport module
-//const successRedrict = "/";
-//const failureRedirect = "/login";
-
 // mysql module
 var mysql = require('promise-mysql');
 var sql_config = require('../sql_config');
 var db = mysql.createPool(sql_config.db);
+const crypto = require('crypto');
+
+const successRedrict = "/";
+const failureRedirect = "/login";
 
 function sha512Base64(password) {
     if (password === undefined) {
@@ -25,6 +20,9 @@ function sha512Base64(password) {
         return hash.digest('base64');
     }
 }
+
+// exports module
+var auth = {};
 
 // TODO: only check password for existing account.
 auth.authenticate = function (uuid, password, done) {
@@ -42,9 +40,5 @@ auth.authenticate = function (uuid, password, done) {
         return done(err);
     });
 };
-
-auth.serializeUser = function() {};
-
-auth.deserializeUser = function() {};
 
 module.exports = auth;

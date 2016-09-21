@@ -13,7 +13,8 @@ var routes_v2 = require('./routes/v2');
 var users = require('./routes/users');
 
 var passport = require('passport');
-var LocalStrategy = require('passport-local').Strategy;
+//var LocalStrategy = require('passport-local').Strategy;
+var BasicStrategy = require('passport-http').BasicStrategy;
 
 var app = express();
 
@@ -44,14 +45,9 @@ app.use('/v2', routes_v2);
 app.use('/users', users);
 
 // passport config
-var local_auth = require('./module/local_auth.js');
+var local_auth = require('./module/http_auth.js');
 
-passport.use(new LocalStrategy({
-        usernameField: 'UUID',
-        passwordField: 'password',
-        session: false
-    }, local_auth.authenticate)
-);
+passport.use('api', new BasicStrategy(local_auth.authenticate));
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
