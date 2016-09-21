@@ -41,4 +41,12 @@ auth.authenticate = function (uuid, password, done) {
     });
 };
 
+auth.register = function (uuid, password, phone) {
+    var query = `INSERT INTO \`USER\` (\`UUID\`, \`password\`, \`phone_number\`) \
+                VALUES ('${uuid.toUpperCase()}', '${sha512Base64(password)}', '${phone}');`;
+    return db.query(query).then((result) => {
+        return {id: result.insertId, description: 'successfuly registered'};
+    });
+};
+
 module.exports = auth;

@@ -45,9 +45,9 @@ app.use('/v2', routes_v2);
 app.use('/users', users);
 
 // passport config
-var local_auth = require('./module/http_auth.js');
+var http_auth = require('./module/http_auth.js');
 
-passport.use('api', new BasicStrategy(local_auth.authenticate));
+passport.use('api', new BasicStrategy(http_auth.authenticate));
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
