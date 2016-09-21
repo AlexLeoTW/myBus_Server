@@ -22,7 +22,7 @@ function sha512Base64(password) {
     } else {
         var hash = crypto.createHash('sha512');
         hash.update(password);
-        return hash.digest('hex');
+        return hash.digest('base64');
     }
 }
 
@@ -33,7 +33,10 @@ auth.postOption = {
 
 // TODO: only check password for existing account.
 auth.authenticate = function (uuid, password, done) {
+    console.log(`uuid = ${uuid}`);
+    console.log(`password = ${password}`);
     var query = `SELECT * FROM USER WHERE UUID = '${uuid}' AND password = '${sha512Base64(password)}'`;
+    console.log(`query = ${query}`);
     db.query(query).then((rows, field) => {
         if (rows.length > 0) {
             return done(null, rows[0]);

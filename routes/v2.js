@@ -188,7 +188,7 @@ router.post('/environment', (req, res) => {
 });
 
 router.get('/account/:uuid',
-    passport.authenticate('basic',{session: false}),
+    passport.authenticate('api',{session: false}),
     (req, res) => {
         res.send(JSON.stringify(req.user));
     }

@@ -101,6 +101,6 @@ function onListening() {
 /**
  * Add cron jobs.
  */
-new CronJob('0 */2 * * * *', function () {
-    cronJobs.updateRealTime();
-}, null, true, 'Asia/Taipei');
+//new CronJob('0 */2 * * * *', function () {
+//    cronJobs.updateRealTime();
+//}, null, true, 'Asia/Taipei');
