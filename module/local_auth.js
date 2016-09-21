@@ -17,9 +17,13 @@ var sql_config = require('../sql_config');
 var db = mysql.createPool(sql_config.db);
 
 function sha512Base64(password) {
-    var hash = crypto.createHash('sha512');
-    hash.update(password);
-    return hash.digest('hex');
+    if (password === undefined) {
+        return password;
+    } else {
+        var hash = crypto.createHash('sha512');
+        hash.update(password);
+        return hash.digest('hex');
+    }
 }
 
 auth.postOption = {
@@ -44,3 +48,5 @@ auth.authenticate = function (uuid, password, done) {
 auth.serializeUser = function() {};
 
 auth.deserializeUser = function() {};
+
+module.exports = auth;

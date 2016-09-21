@@ -1,4 +1,4 @@
-/*jslint node: true, nomen: true, unparam: true */
+/*jslint esversion: 6, node: true*/
 'use strict';
 
 var express = require('express');
@@ -44,10 +44,14 @@ app.use('/v2', routes_v2);
 app.use('/users', users);
 
 // passport config
-var Account = require('./module/local_auth.js');
-passport.use(new LocalStrategy(Account.authenticate()));
-passport.serializeUser(Account.serializeUser());
-passport.deserializeUser(Account.deserializeUser());
+var local_auth = require('./module/local_auth.js');
+
+passport.use(new LocalStrategy({
+        usernameField: 'UUID',
+        passwordField: 'password',
+        session: false
+    }, local_auth.authenticate)
+);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
