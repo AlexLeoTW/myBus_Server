@@ -37,7 +37,21 @@ router.get('/bus', (req, res) => {
 });
 
 router.post('/register', (req, res) => {
-    console.log(http_auth);
+
+    try {
+        escapeParam(req.body,
+            'uuid', {length: 8},
+            'password', null,
+            'phone', null
+        );
+    } catch (err) {
+        res.status(406);
+        res.render('error', {
+            message: 'This EasyCard already been registered, please try again with another one',
+            error: err
+        });
+    }
+
     http_auth.register(req.body.uuid, req.body.password, req.body.phone).then((user) => {
         res.send(JSON.stringify(user));
     }, (err) => {
@@ -48,6 +62,7 @@ router.post('/register', (req, res) => {
                 error: err
             });
         } else {
+            res.status(409);
             res.render('error', {
                 message: 'Unknown Server Error',
                 error: err
@@ -211,5 +226,25 @@ router.get('/account/:uuid',
         res.send(JSON.stringify(req.user));
     }
 );
+
+/*
+    escapeParam(requestBody, name, condition[, name, condition])
+
+    ex. escapeParam('uuid', {length: 8}, 'password', null)
+*/
+function escapeParam(requestBody) {
+    for (var i=1; i < arguments.length; i+=2) {
+        if (arguments[i+1] !== null &&
+            arguments[i+1].length !== undefined &&
+            requestBody[arguments[i]].toString().length !== arguments[i+1].length) {
+
+            throw new Error(`${requestBody[arguments[i]]} is too ${requestBody[arguments[i]].toString().length > arguments[i+1].length ? 'long' : 'short'}, \
+                            should be ${arguments[i+1].length} characters long`);
+
+        } else {
+            requestBody[arguments[i]] = mysql.escape(requestBody[arguments[i]]);
+        }
+    }
+}
 
 module.exports = router;
