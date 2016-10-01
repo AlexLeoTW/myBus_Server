@@ -6,10 +6,10 @@
 var debug = require('debug')('myBus:rv2');
 var express = require('express');
 var router = express.Router();
-var util = require('../module/util.js');
+var util = require('../module/util');
 var passport = require('passport');
-var http_auth = require('../module/http_auth.js');
-var sqlEscape = require('../module/sqlEscape.js');
+var http_auth = require('../module/http_auth');
+var sqlEscape = require('../module/sqlEscape');
 
 // initial DB object
 var mysql = require('promise-mysql');
