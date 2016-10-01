@@ -9,6 +9,7 @@ var router = express.Router();
 var util = require('../module/util.js');
 var passport = require('passport');
 var http_auth = require('../module/http_auth.js');
+var sqlEscape = require('../module/sqlEscape.js');
 
 // initial DB object
 var mysql = require('promise-mysql');
@@ -38,8 +39,9 @@ router.get('/bus', (req, res) => {
 
 router.post('/register', (req, res) => {
 
+    // escape parameters before query
     try {
-        escapeParam(req.body,
+        sqlEscape.escapeParam(req.body,
             'uuid', {length: 8},
             'password', null,
             'phone', null
@@ -47,9 +49,10 @@ router.post('/register', (req, res) => {
     } catch (err) {
         res.status(406);
         res.render('error', {
-            message: 'This EasyCard already been registered, please try again with another one',
+            message: err.message,
             error: err
         });
+        return;
     }
 
     http_auth.register(req.body.uuid, req.body.password, req.body.phone).then((user) => {
@@ -226,25 +229,5 @@ router.get('/account/:uuid',
         res.send(JSON.stringify(req.user));
     }
 );
-
-/*
-    escapeParam(requestBody, name, condition[, name, condition])
-
-    ex. escapeParam('uuid', {length: 8}, 'password', null)
-*/
-function escapeParam(requestBody) {
-    for (var i=1; i < arguments.length; i+=2) {
-        if (arguments[i+1] !== null &&
-            arguments[i+1].length !== undefined &&
-            requestBody[arguments[i]].toString().length !== arguments[i+1].length) {
-
-            throw new Error(`${requestBody[arguments[i]]} is too ${requestBody[arguments[i]].toString().length > arguments[i+1].length ? 'long' : 'short'}, \
-                            should be ${arguments[i+1].length} characters long`);
-
-        } else {
-            requestBody[arguments[i]] = mysql.escape(requestBody[arguments[i]]);
-        }
-    }
-}
 
 module.exports = router;

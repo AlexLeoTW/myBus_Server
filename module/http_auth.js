@@ -46,7 +46,9 @@ auth.register = function (uuid, password, phone) {
                 `VALUES (${uuid.toUpperCase()}, '${sha512Base64(password)}', ${phone});`;
     console.log(query);
     return db.query(query).then((result) => {
-        return {id: result.insertId, description: 'successfuly registered'};
+        return {uuid: uuid.substring(1, uuid.length-1),
+            phone: phone.substring(1, phone.length-1),
+            description: 'successfuly registered'};
     });
 };
 
