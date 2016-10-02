@@ -188,21 +188,30 @@ function parseRealTime(dataString, route, isReverse) {
     };
     var dataPack = dataString.split('_@');
 
-    realTimeData.timeList = parsetArrivalList(dataPack[0]);
+    realTimeData.timeList = parsetArrivalList(dataPack[0], isReverse);
     realTimeData.busList = parseBusList(dataPack[1]);
 
     return realTimeData;
 }
 
-function parsetArrivalList(data) {
+function parsetArrivalList(data, isReverse) {
     var result = [
         //{hour: 0, minute: 0}
     ];
     var rows = data.split('_|');
     console.log(data);
-    for (var i=0; i<rows.length; i++) {
-        //var time = (rows[i].split('_,'))[1].split(':');
-         result.push(parseArrivalEntry(rows[i]));
+
+    var i = 0;
+    if (isReverse) {
+        for (i=rows.length-1; i>=0; i--) {
+            //var time = (rows[i].split('_,'))[1].split(':');
+             result.push(parseArrivalEntry(rows[i]));
+        }
+    } else {
+        for (i=0; i<rows.length; i++) {
+            //var time = (rows[i].split('_,'))[1].split(':');
+             result.push(parseArrivalEntry(rows[i]));
+        }
     }
 
     return result;
