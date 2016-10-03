@@ -47,7 +47,6 @@ auth.authenticate = function (uuid, password, done) {
 };
 
 function getUser(user, done) {
-    console.log(user);
     var query = `SELECT * FROM USER WHERE UUID = ${user.uuid} AND password = '${sha512Base64(user.password)}'`;
     db.query(query).then((rows, field) => {
         if (rows.length > 0) {

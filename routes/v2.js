@@ -200,7 +200,14 @@ router.post('/environment', (req, res) => {
 router.get('/account/:uuid',
     passport.authenticate('api',{session: false}),
     (req, res) => {
-        res.send(JSON.stringify(req.user));
+        if (req.params.uuid === req.user.UUID) {
+            res.send(JSON.stringify(req.user));
+        } else {
+            debug(`User ${req.user.UUID} try to access ${req.params.uuid}'s account info'`);
+            res.status(401);
+            res.send('{"message":"Unauthorized"}');
+        }
+
     }
 );
 
