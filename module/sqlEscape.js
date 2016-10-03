@@ -30,7 +30,6 @@ function escapeParam(requestBody) {
         }
 
         requestBody[arguments[i]] = mysql.escape(requestBody[arguments[i]]);
-        console.log(`${arguments[i]} = ${requestBody[arguments[i]]}`);
     }
 }
 
