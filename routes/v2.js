@@ -8,8 +8,7 @@ var express = require('express');
 var router = express.Router();
 var util = require('../module/util');
 var passport = require('passport');
-var http_auth = require('../module/http_auth');
-var sqlEscape = require('../module/sqlEscape');
+var http_auth = require('../module/http_auth.js');
 
 // initial DB object
 var mysql = require('promise-mysql');
@@ -38,39 +37,14 @@ router.get('/bus', (req, res) => {
 });
 
 router.post('/register', (req, res) => {
-
-    // escape parameters before query
-    try {
-        sqlEscape.escapeParam(req.body,
-            'uuid', {length: 8},
-            'password', null,
-            'phone', null
-        );
-    } catch (err) {
-        res.status(406);
+    http_auth.register(req.body.uuid, req.body.password, req.body.phone).then((user) => {
+        res.send(JSON.stringify(user));
+    }, (err) => {
+        res.status(err.code);
         res.render('error', {
             message: err.message,
             error: err
         });
-        return;
-    }
-
-    http_auth.register(req.body.uuid, req.body.password, req.body.phone).then((user) => {
-        res.send(JSON.stringify(user));
-    }, (err) => {
-        if (err.code.includes('ER_DUP_ENTRY')) {
-            res.status(409);
-            res.render('error', {
-                message: 'This EasyCard already been registered, please try again with another one',
-                error: err
-            });
-        } else {
-            res.status(409);
-            res.render('error', {
-                message: 'Unknown Server Error',
-                error: err
-            });
-        }
     });
 });
 
