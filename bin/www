@@ -8,7 +8,7 @@ var app = require('../app');
 var debug = require('debug')('myBus:server');
 var ssl = require('../ssl_config');
 var http = require('http'),
-    https = require('tls');
+    https = require('https');
 var CronJob = require('cron').CronJob;
 var cronJobs = require('../module/cronJobs');
 
@@ -25,7 +25,7 @@ app.set('httpsport', 8080);
  */
 
 var httpServer = http.createServer(app);
-var httpsServer = https.createServer(app);
+var httpsServer = https.createServer(ssl.options, app);
 
 /**
  * Listen on provided port, on all network interfaces.
