@@ -18,7 +18,7 @@ var cronJobs = require('../module/cronJobs');
 
 var port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
-app.set('httpsport', 8080);
+app.set('httpsport', 8000);
 
 /**
  * Create HTTP server.
