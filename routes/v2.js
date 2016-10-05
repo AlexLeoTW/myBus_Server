@@ -41,9 +41,8 @@ router.post('/register', (req, res) => {
         res.send(JSON.stringify(user));
     }, (err) => {
         res.status(err.code);
-        res.render('error', {
-            message: err.message,
-            error: err
+        res.json({
+            description: err.message
         });
     });
 });
@@ -51,9 +50,8 @@ router.post('/register', (req, res) => {
 router.get('/busArrival', (req, res) => {
     if (req.query.route === undefined) {
         res.status(400);
-        res.render('error', {
-            message: 'Too few arguments (route)',
-            error: {}
+        res.json({
+            description: 'Too few arguments (missing route)'
         });
     } else {
         var query = `SELECT * FROM \`Bus_arrival\` WHERE \`route\` = ${req.query.route} `;
@@ -85,9 +83,8 @@ router.get('/lineStatus', (req, res) => {
         query += `WHERE \`route\` = ${db.escape(req.query.route)} AND \`is_reverse\` = ${util.escapeBoolean(req.query.is_reverse)} `;
     } else {
         res.status(400);
-        res.render('error', {
-            message: 'Too few arguments',
-            error: {}
+        res.json({
+            description: 'Too few arguments'
         });
     }
 
@@ -139,15 +136,13 @@ router.post('/reservation',
                 debug(err.code);
                 if (err.code.includes('ER_NO_REFERENCED_ROW')) {
                     res.status(400);
-                    res.render('error', {
-                        message: 'Error you are not registered yet',
-                        error: {}
+                    res.json({
+                        description: 'Error you are not registered yet'
                     });
                 } else {
                     res.status(500);
-                    res.render('error', {
-                        message: 'Unknown Error',
-                        error: {}
+                    res.json({
+                        description: 'Unknown Error'
                     });
                 }
             });
@@ -165,9 +160,8 @@ router.post('/environment', (req, res) => {
 
     if (req.body.route === undefined || req.body.sn === undefined || req.body.is_reverse === undefined) {
         res.status(400);
-        res.render('error', {
-            message: 'Too few arguments',
-            error: 'route, sn, is_reverse are required'
+        res.json({
+            description: 'Too few arguments (route, sn, is_reverse are required)'
         });
         return;
     }
@@ -205,7 +199,7 @@ router.get('/account/:uuid',
         } else {
             debug(`User ${req.user.UUID} try to access ${req.params.uuid}'s account info'`);
             res.status(401);
-            res.send('{"message":"Unauthorized"}');
+            res.send('{"description":"Unauthorized"}');
         }
 
     }
