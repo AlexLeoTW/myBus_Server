@@ -45,6 +45,7 @@ Testing/passport.route.js
 module/fetch_taichung_test.js
 module/cronJobs_test.js
 module/utils_test.js
+module/sqlEscape_test.js
 
 # Local Scripts
 start.sh

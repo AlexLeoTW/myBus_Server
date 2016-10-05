@@ -61,35 +61,7 @@ function distenceInKm (location1, location2)/*(lon1, lat1, lon2, lat2)*/ {
     }
 }
 
-
-
-/*
-    Data Escape
-*/
-function escapeBoolean(userInput) {
-    if (isNaN(userInput)) {
-        userInput = userInput.substring(0, 5);
-        if (userInput.includes('true')) {
-            return true;
-        } else if (userInput.includes('false')) {
-            return false;
-        } else {
-            return ull;
-        }
-    } else {
-        userInput = Number(userInput);
-        if (userInput === 1) {
-            return true;
-        } else if (userInput === 0) {
-            return false;
-        } else {
-            return null;
-        }
-    }
-}
-
 module.exports.toTimestamp = toTimestamp;
 module.exports.toSqlTimestamp = toSqlTimestamp;
 module.exports.earthRadiusKm = earthRadiusKm;
 module.exports.distenceInKm = distenceInKm;
-module.exports.escapeBoolean = escapeBoolean;

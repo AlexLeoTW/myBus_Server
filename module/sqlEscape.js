@@ -9,11 +9,26 @@ var mysql = require('promise-mysql');
 
     options:
         - length: fixed or {max: maxLength, min: maxLength}
-        -
+        - optional: true || false
+        - type: boolean, number
 */
 function escapeParam(requestBody) {
+
     for (var i=1; i < arguments.length; i+=2) {
-        if (arguments[i+1] !== null && arguments[i+1].length !== undefined) {
+
+        // check if 'condition' is provided
+        if (arguments[i+1] === undefined) {
+            requestBody[arguments[i]] = mysql.escape(requestBody[arguments[i]]);
+            continue;
+        }
+
+        // check if 'optional' set
+        if (requestBody[arguments[i]] === undefined && arguments[i+1].optional !== true) {
+            throw new Error(`missing ${arguments[i]}`);
+        }
+
+        // check if 'length' set
+        if (arguments[i+1].length !== undefined) {
             var argLength = requestBody[arguments[i]].toString().length;
             var lengthLimit = arguments[i+1].length;
 
@@ -29,8 +44,51 @@ function escapeParam(requestBody) {
             }
         }
 
+        // check if 'type' set
+        if (arguments[i+1].type !== undefined) {
+            switch (arguments[i+1].type) {
+                case 'boolean':
+                    var newBool = escapeBoolean(requestBody[arguments[i]]);
+                    if (newBool === null) {
+                        return new Error(`${arguments[i]} should be a boolean, not ${requestBody[arguments[i]]}`);
+                    } else {
+                        requestBody[arguments[i]] = newBool;
+                        continue;               // boolean type doesn't support other option
+                    }
+                    break;
+                case 'number':
+                    if (isNaN(requestBody[arguments[i]])) {
+                        return new Error(`${arguments[i]} should be a number, not ${requestBody[arguments[i]]}`);
+                    }
+                    continue;               // boolean type doesn't support further option, and not suppose to be convert into string
+                //default 'string'
+            }
+        }
+
         requestBody[arguments[i]] = mysql.escape(requestBody[arguments[i]]);
     }
 }
 
+function escapeBoolean(userInput) {
+    if (isNaN(userInput)) {
+        if (userInput === 'true') {
+            return true;
+        } else if (userInput === 'false') {
+            return false;
+        } else {
+            return null;
+        }
+    } else {
+        userInput = Number(userInput);
+        if (userInput === 1) {
+            return true;
+        } else if (userInput === 0) {
+            return false;
+        } else {
+            return null;
+        }
+    }
+}
+
 module.exports.escapeParam = escapeParam;
+module.exports.escapeBoolean = escapeBoolean;

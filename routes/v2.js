@@ -6,9 +6,9 @@
 var debug = require('debug')('myBus:rv2');
 var express = require('express');
 var router = express.Router();
-var util = require('../module/util');
 var passport = require('passport');
 var http_auth = require('../module/http_auth.js');
+var sqlEscape = require('../module/sqlEscape.js');
 
 // initial DB object
 var mysql = require('promise-mysql');
@@ -56,7 +56,7 @@ router.get('/busArrival', (req, res) => {
     } else {
         var query = `SELECT * FROM \`Bus_arrival\` WHERE \`route\` = ${req.query.route} `;
         if (req.query.is_reverse !== undefined) {
-            query += `AND \`is_reverse\` = ${util.escapeBoolean(req.query.is_reverse)}`;
+            query += `AND \`is_reverse\` = ${sqlEscape.escapeBoolean(req.query.is_reverse)}`;
         }
         db.query(query).then((rows) => {
             if (rows.length === 0) {
@@ -71,7 +71,7 @@ router.get('/busArrival', (req, res) => {
 router.get('/lineStatus', (req, res) => {
     var query = '';
 
-    if (req.query.verbose === undefined || util.escapeBoolean(req.query.verbose) === true) {
+    if (req.query.verbose === undefined || sqlEscape.escapeBoolean(req.query.verbose) === true) {
         query += 'SELECT * ';
     } else {
         query += 'SELECT `closestStop` ';
@@ -80,7 +80,7 @@ router.get('/lineStatus', (req, res) => {
     query += 'FROM `Bus_status` ';
 
     if (req.query.route && req.query.is_reverse) {
-        query += `WHERE \`route\` = ${db.escape(req.query.route)} AND \`is_reverse\` = ${util.escapeBoolean(req.query.is_reverse)} `;
+        query += `WHERE \`route\` = ${db.escape(req.query.route)} AND \`is_reverse\` = ${sqlEscape.escapeBoolean(req.query.is_reverse)} `;
     } else {
         res.status(400);
         res.json({
@@ -109,48 +109,42 @@ router.post('/reservation',
     passport.authenticate('standard',{session: false}),
     (req, res) => {
         // INSERT INTO `Reservation_List`(`UUID`, `route`, `is_reverse`, `from_sn`, `to_sn`) VALUES ('B397A7F7',160,false,1,3)
-        var query = "INSERT INTO `Reservation_List`(`UID`, `route`, `is_reverse`, `from_sn`, `to_sn`) ";
-
-        if (req.body.UID && req.body.route && req.body.from_sn && req.body.to_sn && !isNaN(req.body.from_sn) && !isNaN(req.body.to_sn)) {
-            ['UID', 'route', 'from_sn', 'to_sn'].forEach((item, index) => {
-                req.body[item] = mysql.escape(req.body[item]);
+        try {
+            sqlEscape.escapeParam(req.body,
+                'route', {type: 'number'},
+                //'is_reverse', {optional: true},     // actually not needed anymore
+                'from_sn', {type: 'number'},
+                'to_sn', {type: 'number'}
+            );
+        } catch (err) {
+            res.status(406);
+            res.json({
+                description: err.message
             });
-
-            query += `VALUES (${req.body.UID},${req.body.route},${(req.body.from_sn<req.body.to_sn)},${req.body.from_sn},${req.body.to_sn})`;
-            debug(query);
-            db.query(query).then( (raws, field) => {
-                res.send("Register OK");
-            }, (err) => {
-                if (err.code.includes('ER_DUP_ENTRY')) {
-                    //UPDATE `Reservation_List` SET `route`=160,`is_reverse`=true,`from_sn`=5,`to_sn`=3 WHERE `UID`='b397a7f7'
-                    debug(err.code);
-                    query = `UPDATE \`Reservation_List\` SET \`route\`=${req.body.route},\`is_reverse\`=${(req.body.from_sn<req.body.to_sn)},\`from_sn\`=${req.body.from_sn},\`to_sn\`=${req.body.to_sn} WHERE \`UID\`=${req.body.UID}`;
-                    debug(query);
-                    db.query(query).then(() => {
-                        res.send("Register Update OK");
-                    });
-                } else {
-                    throw err;
-                }
-            }).error((err) => {
-                debug(err.code);
-                if (err.code.includes('ER_NO_REFERENCED_ROW')) {
-                    res.status(400);
-                    res.json({
-                        description: 'Error you are not registered yet'
-                    });
-                } else {
-                    res.status(500);
-                    res.json({
-                        description: 'Unknown Error'
-                    });
-                }
-            });
-        } else {
-            var err = new Error('Too few arguments');
-            err.status = 400;
-            throw err;
         }
+
+        var query = `INSERT INTO \`Reservation_List\`(\`UID\`, \`route\`, \`is_reverse\`, \`from_sn\`, \`to_sn\`) ` +
+                    `VALUES ('${req.user.UUID}',${req.body.route},${(req.body.from_sn<req.body.to_sn)},${req.body.from_sn},${req.body.to_sn})`;
+        db.query(query).then((rows, field) => {
+            res.json({description: "Register OK"});
+        }, (err) => {
+            if (err.code.includes('ER_DUP_ENTRY')) {
+                debug(`Reservation with id ${req.user.UUID} already exist, update`);
+                //UPDATE `Reservation_List` SET `route`=160,`is_reverse`=true,`from_sn`=5,`to_sn`=3 WHERE `UID`='b397a7f7'
+                query = `UPDATE \`Reservation_List\` SET \`route\`=${req.body.route},\`is_reverse\`=${(req.body.from_sn<req.body.to_sn)},\`from_sn\`=${req.body.from_sn},\`to_sn\`=${req.body.to_sn} WHERE \`UID\`='${req.user.UUID}'`;
+                db.query(query).then(() => {
+                    res.json({description: "Register UPDATE OK"});
+                });
+            } else if (err.code.includes('ER_NO_REFERENCED_ROW')) {
+                res.status(400);
+                res.json({
+                    description: 'Error you are not registered yet'
+                });
+            } else {
+                res.status(500);
+                res.json({description: 'Unknown Error'});
+            }
+        });
 });
 
 router.post('/environment', (req, res) => {
@@ -170,7 +164,7 @@ router.post('/environment', (req, res) => {
             `${req.body.humidity ? `\`humidity\`='${req.body.humidity}',` : ''}` +
             `${req.body.temp ? `\`temperature\`='${req.body.temp}',` : ''}` +
             `\`timestamp\`=CURRENT_TIMESTAMP ` +
-            `WHERE \`route\`='${req.body.route}' AND \`sn\`='${req.body.sn}' AND \`is_reverse\`='${util.escapeBoolean(req.body.sn)}'`;
+            `WHERE \`route\`='${req.body.route}' AND \`sn\`='${req.body.sn}' AND \`is_reverse\`='${sqlEscape.escapeBoolean(req.body.sn)}'`;
 
     db.query(query).then((result) => {
         if (result.affectedRows <= 0) {

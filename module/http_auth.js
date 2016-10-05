@@ -48,7 +48,6 @@ auth.authenticate = function (permissionReq, uuid, password, done) {
         err.code = 406;
         throw err;
     }
-    console.log('before getUser');
 
     getUser(user).then((user) => {
         if (permissionLevel[user.permission] >= permissionLevel[permissionReq]) {
