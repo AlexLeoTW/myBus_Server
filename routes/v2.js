@@ -106,7 +106,7 @@ router.get('/lineStatus', (req, res) => {
 });
 
 router.post('/reservation',
-    passport.authenticate('api',{session: false}),
+    passport.authenticate('standard',{session: false}),
     (req, res) => {
         // INSERT INTO `Reservation_List`(`UUID`, `route`, `is_reverse`, `from_sn`, `to_sn`) VALUES ('B397A7F7',160,false,1,3)
         var query = "INSERT INTO `Reservation_List`(`UID`, `route`, `is_reverse`, `from_sn`, `to_sn`) ";
@@ -192,7 +192,7 @@ router.post('/environment', (req, res) => {
 });
 
 router.get('/account/:uuid',
-    passport.authenticate('api',{session: false}),
+    passport.authenticate('standard',{session: false}),
     (req, res) => {
         if (req.params.uuid === req.user.UUID) {
             res.send(JSON.stringify(req.user));

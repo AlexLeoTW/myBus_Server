@@ -11,6 +11,12 @@ var passport = require('passport');
 var BasicStrategy = require('passport-http').BasicStrategy;
 var sqlEscape = require('../module/sqlEscape.js');
 var debug = require('debug')('myBus:auth');
+const permissionLevel = {
+    admin: 10,
+    arduino: 5,
+    standard: 3,
+    none: 0
+};
 
 // const successRedrict = "/";
 // const failureRedirect = "/login";
@@ -29,7 +35,7 @@ function sha512Base64(password) {
 var auth = {};
 
 // TODO: only check password for existing account.
-auth.authenticate = function (uuid, password, done) {
+auth.authenticate = function (permissionReq, uuid, password, done) {
     var user = {};
     user.uuid = uuid;
     user.password = password;
@@ -42,23 +48,28 @@ auth.authenticate = function (uuid, password, done) {
         err.code = 406;
         throw err;
     }
+    console.log('before getUser');
 
-    getUser(user, done);
-};
-
-function getUser(user, done) {
-    var query = `SELECT * FROM USER WHERE UUID = ${user.uuid} AND password = '${sha512Base64(user.password)}'`;
-    db.query(query).then((rows, field) => {
-        if (rows.length > 0) {
-            return done(null, rows[0]);
+    getUser(user).then((user) => {
+        if (permissionLevel[user.permission] >= permissionLevel[permissionReq]) {
+            return done(null, user);
         } else {
             return done(null, false);
         }
     }, (err) => {
-        err = new Error('Wow! Looks like the Database is down, maybe we should give it a hug!?');
-        err.code = 500;
         return done(err);
     });
+};
+
+function getUser(user) {
+    var query = `SELECT * FROM USER WHERE UUID = ${user.uuid} AND password = '${sha512Base64(user.password)}'`;
+    return db.query(query).then((rows, field) => {
+        return rows[0];
+    }, (err => {
+        err = new Error('Wow! Looks like the Database is down, maybe we should give it a hug!?');
+        err.code = 500;
+        throw err;
+    }));
 }
 
 auth.register = function (uuid, password, phone) {
@@ -102,6 +113,11 @@ function saveUser(user) {
     });
 }
 
-passport.use('api', new BasicStrategy(auth.authenticate));
+//passport.use('api', new BasicStrategy(auth.authenticate));
+for (var level in permissionLevel) {
+    passport.use(level, new BasicStrategy(auth.authenticate.bind(null, level)));
+}
+
+//passport.use(level, new BasicStrategy(auth.authenticate.bind(null, level)));
 
 module.exports = auth;
