@@ -29,7 +29,6 @@ function escapeParam(requestBody) {
 
         // check if 'length' set
         if (arguments[i+1].length !== undefined) {
-            console.log(`arguments[i+1].length = ${arguments[i+1].length}`);
             var argLength = requestBody[arguments[i]].toString().length;
             var lengthLimit = arguments[i+1].length;
 
