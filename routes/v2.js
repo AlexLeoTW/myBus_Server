@@ -105,7 +105,8 @@ router.get('/lineStatus', (req, res) => {
     });
 });
 
-router.post('/reservation', (req, res) => {
+router.post('/reservation',
+    passport.authenticate('standard',{session: false}), (req, res) => {
     // INSERT INTO `Reservation_List`(`UUID`, `route`, `is_reverse`, `from_sn`, `to_sn`) VALUES ('B397A7F7',160,false,1,3)
     try {
         sqlEscape.escapeParam(req.body,
