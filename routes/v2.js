@@ -105,46 +105,44 @@ router.get('/lineStatus', (req, res) => {
     });
 });
 
-router.post('/reservation',
-    passport.authenticate('standard',{session: false}),
-    (req, res) => {
-        // INSERT INTO `Reservation_List`(`UUID`, `route`, `is_reverse`, `from_sn`, `to_sn`) VALUES ('B397A7F7',160,false,1,3)
-        try {
-            sqlEscape.escapeParam(req.body,
-                'route', {type: 'number'},
-                //'is_reverse', {optional: true},     // actually not needed anymore
-                'from_sn', {type: 'number'},
-                'to_sn', {type: 'number'}
-            );
-        } catch (err) {
-            res.status(406);
-            res.json({
-                description: err.message
-            });
-        }
-
-        var query = `INSERT INTO \`Reservation_List\`(\`UID\`, \`route\`, \`is_reverse\`, \`from_sn\`, \`to_sn\`) ` +
-                    `VALUES ('${req.user.UUID}',${req.body.route},${(req.body.from_sn<req.body.to_sn)},${req.body.from_sn},${req.body.to_sn})`;
-        db.query(query).then((rows, field) => {
-            res.json({description: "Register OK"});
-        }, (err) => {
-            if (err.code.includes('ER_DUP_ENTRY')) {
-                debug(`Reservation with id ${req.user.UUID} already exist, update`);
-                //UPDATE `Reservation_List` SET `route`=160,`is_reverse`=true,`from_sn`=5,`to_sn`=3 WHERE `UID`='b397a7f7'
-                query = `UPDATE \`Reservation_List\` SET \`route\`=${req.body.route},\`is_reverse\`=${(req.body.from_sn<req.body.to_sn)},\`from_sn\`=${req.body.from_sn},\`to_sn\`=${req.body.to_sn} WHERE \`UID\`='${req.user.UUID}'`;
-                db.query(query).then(() => {
-                    res.json({description: "Register UPDATE OK"});
-                });
-            } else if (err.code.includes('ER_NO_REFERENCED_ROW')) {
-                res.status(400);
-                res.json({
-                    description: 'Error you are not registered yet'
-                });
-            } else {
-                res.status(500);
-                res.json({description: 'Unknown Error'});
-            }
+router.post('/reservation', (req, res) => {
+    // INSERT INTO `Reservation_List`(`UUID`, `route`, `is_reverse`, `from_sn`, `to_sn`) VALUES ('B397A7F7',160,false,1,3)
+    try {
+        sqlEscape.escapeParam(req.body,
+            'route', {type: 'number'},
+            //'is_reverse', {optional: true},     // actually not needed anymore
+            'from_sn', {type: 'number'},
+            'to_sn', {type: 'number'}
+        );
+    } catch (err) {
+        res.status(406);
+        res.json({
+            description: err.message
         });
+    }
+
+    var query = `INSERT INTO \`Reservation_List\`(\`UID\`, \`route\`, \`is_reverse\`, \`from_sn\`, \`to_sn\`) ` +
+                `VALUES ('${req.user.UUID}',${req.body.route},${(req.body.from_sn<req.body.to_sn)},${req.body.from_sn},${req.body.to_sn})`;
+    db.query(query).then((rows, field) => {
+        res.json({description: "Register OK"});
+    }, (err) => {
+        if (err.code.includes('ER_DUP_ENTRY')) {
+            debug(`Reservation with id ${req.user.UUID} already exist, update`);
+            //UPDATE `Reservation_List` SET `route`=160,`is_reverse`=true,`from_sn`=5,`to_sn`=3 WHERE `UID`='b397a7f7'
+            query = `UPDATE \`Reservation_List\` SET \`route\`=${req.body.route},\`is_reverse\`=${(req.body.from_sn<req.body.to_sn)},\`from_sn\`=${req.body.from_sn},\`to_sn\`=${req.body.to_sn} WHERE \`UID\`='${req.user.UUID}'`;
+            db.query(query).then(() => {
+                res.json({description: "Register UPDATE OK"});
+            });
+        } else if (err.code.includes('ER_NO_REFERENCED_ROW')) {
+            res.status(400);
+            res.json({
+                description: 'Error you are not registered yet'
+            });
+        } else {
+            res.status(500);
+            res.json({description: 'Unknown Error'});
+        }
+    });
 });
 
 router.post('/environment', (req, res) => {
