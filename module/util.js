@@ -8,19 +8,31 @@
 function toTimestamp(time) {
     var timestamp = new Date();
 
+    // make the 'date' right!
+    if (time.local && !isNaN(time.local)) {
+        timestamp.setUTCDate(dateOffset(timestamp, time.local).getUTCDate());
+    }
+
+    // make the 'hour' right!
     if (time.hour && !isNaN(time.hour)) {
         timestamp.setUTCHours(Number(time.hour));
     }
 
+    // make the 'hour' right!
     if (time.minute && !isNaN(time.minute)) {
         timestamp.setUTCMinutes(Number(time.minute));
     }
 
     if (time.local && !isNaN(time.local)) {
         timestamp = new Date(timestamp.valueOf() - Number(time.local)*60*60*1000);   // 8*60*60*1000 (offset: -8 hr to match UTC)
+        //console.log(timestamp);
     }
 
     return timestamp;
+}
+
+function dateOffset(date, offset) {
+    return new Date(date.valueOf() + Number(offset)*60*60*1000);   // 8*60*60*1000 (offset: -8 hr to match UTC)
 }
 
 // convert JavaScript Date Object to SQL timestamp
@@ -65,3 +77,4 @@ module.exports.toTimestamp = toTimestamp;
 module.exports.toSqlTimestamp = toSqlTimestamp;
 module.exports.earthRadiusKm = earthRadiusKm;
 module.exports.distenceInKm = distenceInKm;
+module.exports.dateOffset = dateOffset;
