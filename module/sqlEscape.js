@@ -15,9 +15,10 @@ var mysql = require('promise-mysql');
 function escapeParam(requestBody) {
 
     for (var i=1; i < arguments.length; i+=2) {
+        console.log(`(${arguments[i]},${arguments[i+1]} )`);
 
         // check if 'condition' is provided
-        if (arguments[i+1] === undefined) {
+        if (arguments[i+1] === undefined || arguments[i+1] === null) {
             requestBody[arguments[i]] = mysql.escape(requestBody[arguments[i]]);
             continue;
         }
@@ -29,6 +30,7 @@ function escapeParam(requestBody) {
 
         // check if 'length' set
         if (arguments[i+1].length !== undefined) {
+            console.log(`arguments[i+1].length = ${arguments[i+1].length}`);
             var argLength = requestBody[arguments[i]].toString().length;
             var lengthLimit = arguments[i+1].length;
 
@@ -45,7 +47,7 @@ function escapeParam(requestBody) {
         }
 
         // check if 'type' set
-        if (arguments[i+1].type !== undefined) {
+        if (typeof arguments[i+1].type !== undefined) {
             switch (arguments[i+1].type) {
                 case 'boolean':
                     var newBool = escapeBoolean(requestBody[arguments[i]]);
