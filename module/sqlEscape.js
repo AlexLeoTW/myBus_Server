@@ -15,7 +15,6 @@ var mysql = require('promise-mysql');
 function escapeParam(requestBody) {
 
     for (var i=1; i < arguments.length; i+=2) {
-        console.log(`(${arguments[i]},${arguments[i+1]} )`);
 
         // check if 'condition' is provided
         if (arguments[i+1] === undefined || arguments[i+1] === null) {
