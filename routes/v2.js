@@ -109,6 +109,7 @@ router.post('/reservation', (req, res) => {
     // INSERT INTO `Reservation_List`(`UUID`, `route`, `is_reverse`, `from_sn`, `to_sn`) VALUES ('B397A7F7',160,false,1,3)
     try {
         sqlEscape.escapeParam(req.body,
+            'UID', null,
             'route', {type: 'number'},
             //'is_reverse', {optional: true},     // actually not needed anymore
             'from_sn', {type: 'number'},
@@ -122,14 +123,14 @@ router.post('/reservation', (req, res) => {
     }
 
     var query = `INSERT INTO \`Reservation_List\`(\`UID\`, \`route\`, \`is_reverse\`, \`from_sn\`, \`to_sn\`) ` +
-                `VALUES ('${req.user.UUID}',${req.body.route},${(req.body.from_sn<req.body.to_sn)},${req.body.from_sn},${req.body.to_sn})`;
+                `VALUES ('${req.body.UUID}',${req.body.route},${(req.body.from_sn<req.body.to_sn)},${req.body.from_sn},${req.body.to_sn})`;
     db.query(query).then((rows, field) => {
         res.json({description: "Register OK"});
     }, (err) => {
         if (err.code.includes('ER_DUP_ENTRY')) {
-            debug(`Reservation with id ${req.user.UUID} already exist, update`);
+            debug(`Reservation with id ${req.body.UUID} already exist, update`);
             //UPDATE `Reservation_List` SET `route`=160,`is_reverse`=true,`from_sn`=5,`to_sn`=3 WHERE `UID`='b397a7f7'
-            query = `UPDATE \`Reservation_List\` SET \`route\`=${req.body.route},\`is_reverse\`=${(req.body.from_sn<req.body.to_sn)},\`from_sn\`=${req.body.from_sn},\`to_sn\`=${req.body.to_sn} WHERE \`UID\`='${req.user.UUID}'`;
+            query = `UPDATE \`Reservation_List\` SET \`route\`=${req.body.route},\`is_reverse\`=${(req.body.from_sn<req.body.to_sn)},\`from_sn\`=${req.body.from_sn},\`to_sn\`=${req.body.to_sn} WHERE \`UID\`='${req.body.UUID}'`;
             db.query(query).then(() => {
                 res.json({description: "Register UPDATE OK"});
             });
