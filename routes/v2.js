@@ -188,7 +188,7 @@ router.post('/environment', (req, res) => {
 router.get('/account/:uuid',
     passport.authenticate('standard',{session: false}),
     (req, res) => {
-        if (req.params.uuid === req.user.UUID) {
+        if (req.params.uuid.toUpperCase() === req.user.UUID.toUpperCase()) {
             res.send(JSON.stringify(req.user));
         } else {
             debug(`User ${req.user.UUID} try to access ${req.params.uuid}'s account info'`);
