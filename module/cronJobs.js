@@ -121,11 +121,13 @@ function updateRealTime(pos) {
             mergedData = data;
         }).then(() => {
             debug(`Update realtime data for route ${mergedData.route} ${mergedData.isReverse?'foward':'reverse'}`);
-            saveBusArrival(mergedData);
-            saveBusStatus(mergedData);
+        }).then(() => {
+            return saveBusArrival(mergedData);
+        }).then(() => {
+            return saveBusStatus(mergedData);
+        }).then(() => {
+            updateRealTime(pos+1);
         });
-
-        updateRealTime(pos+1);
     }
 }
 
@@ -290,21 +292,22 @@ function deleteRouteOperator(routeNo, connection) {
 
 function updateStopList(pos) {
     if (pos === undefined) {
-        updateStopList(0);
+        return updateStopList(0);
     } else if (pos < routeToFetch.length) {
         debug(`Update stop list for route ${routeToFetch[pos].route} ${routeToFetch[pos].isReverse?'foward':'reverse'}`);
-        taichung.fetchStopList({route:routeToFetch[pos].route, isReverse:routeToFetch[pos].isReverse}).then((data) => {
-            saveStopList(data);
+        return taichung.fetchStopList({route:routeToFetch[pos].route, isReverse:routeToFetch[pos].isReverse}).then((data) => {
+            return saveStopList(data);
+        }).then(() => {
+            updateStopList(pos+1);
         });
-        updateStopList(pos+1);
     }
 }
 
 function saveStopList(data, pos) {
     if (pos === undefined) {
-        saveStopList(data, 0);
+        return saveStopList(data, 0);
     } else if (pos < data.stops.length) {
-        saveStopEntry(data.route, data.isReverse ? data.stops.length-pos : pos+1, data.isReverse, data.stops[pos].longitude, data.stops[pos].latitude, data.stops[pos].name).then(() => {
+        return saveStopEntry(data.route, data.isReverse ? data.stops.length-pos : pos+1, data.isReverse, data.stops[pos].longitude, data.stops[pos].latitude, data.stops[pos].name).then(() => {
             saveStopList(data, pos+1);
         });
     }
