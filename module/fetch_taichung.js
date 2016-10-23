@@ -4,6 +4,7 @@ const request = require('request');
 const jsdom = require("jsdom");
 const iconv = require('iconv-lite');
 const util = require('./util');
+const sqlEscape = require('./sqlEscape');
 var fs = require("fs");
 var jquery = fs.readFileSync("./node_modules/jquery/dist/jquery.js", "utf-8");
 var timetable = '';
@@ -456,7 +457,69 @@ function buildRouteObj(dataString) {
     return result;
 }
 
+/* ========================================================================================================= */
+/*
+config = {
+    route: required
+    isReverse: required
+    lang: optional
+}
+*/
+function fetchStopList(config) {
+
+    return new Promise((resolve, reject) => {
+        request.post({
+            url:'http://citybus.taichung.gov.tw/iTravel/RealRoute/aspx/RealRoute.ashx',
+            form: {
+                Type: 'GetStop',
+                Data: `${config.route}_,${config.isReverse ? 2 : 1}`,
+                Lang: `${config.lang?config.lang:'Cht'}`
+            }},
+            function optionalCallback(err, httpResponse, body) {
+                if (!err && httpResponse.statusCode == 200) {
+                    resolve({
+                        route: config.route,
+                        isReverse: config.isReverse,
+                        stops: parseStopList(body)
+                    });
+                } else {
+                    reject(err);
+                }
+            }
+        );
+    });
+}
+
+function parseStopList(data) {
+    var result = [
+        //{ name: '臺中火車站', longitude: 120.684659, latitude: 24.137404, sn: 5409}
+    ];
+    var stops = data.split('_|');
+
+    for (var index in stops) {
+        if (stops.hasOwnProperty(index)) {
+            result.push(parseStopEntry(stops[index]));
+        }
+    }
+
+    return result;
+}
+
+function parseStopEntry(line) {
+    // { name: '臺中火車站', longitude: 120.684659, latitude: 24.137404, sn: 5409};
+    var result = {};
+    var data = line.split('_,');
+
+    result.name = data[1];
+    result.longitude = data[3];
+    result.latitude = data[2];
+    result.sn = data[5];
+
+    return result;
+}
+
 module.exports.fetchTimeTable = fetchTimeTable;
 module.exports.fetchBusStatus = fetchBusStatus;
 module.exports.mergeBusStatus = mergeBusStatus;
 module.exports.fetchRouteList = fetchRouteList;
+module.exports.fetchStopList = fetchStopList;
