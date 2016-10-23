@@ -9,6 +9,8 @@ var util = require('./util');
 
 var taichung = require('./fetch_taichung');
 const routeToFetch = [
+    {route: 5, isReverse: true},
+    {route: 5, isReverse: false},
     {route: 160, isReverse: true},
     {route: 160, isReverse: false}
 ];
@@ -107,6 +109,8 @@ function saveTimetableEntry (route, weekday, is_reverse, hour, minute, local) {
     });
 }
 
+/* ========================================================================================================= */
+
 function updateRealTime(pos) {
     if (pos === undefined) {
         updateRealTime(0);
@@ -204,6 +208,8 @@ function clearBusOutdated(connection) {
     .catch((err) => {console.log(err);});
 }
 
+/* ========================================================================================================= */
+
 function updateBusStatus(data, connection) {
     //debug(`updateBusStatus(${data.plate_no})`);
     //console.log(`updateBusStatus(${data.plate_no})`);
@@ -280,6 +286,41 @@ function deleteRouteOperator(routeNo, connection) {
     return connection.query(`DELETE FROM \`Route_operator\` WHERE \`routeNo\`=${routeNo}`);
 }
 
+/* ========================================================================================================= */
+
+function updateStopList(pos) {
+    if (pos === undefined) {
+        updateStopList(0);
+    } else if (pos < routeToFetch.length) {
+        debug(`Update stop list for route ${routeToFetch[pos].route} ${routeToFetch[pos].isReverse?'foward':'reverse'}`);
+        taichung.fetchStopList({route:routeToFetch[pos].route, isReverse:routeToFetch[pos].isReverse}).then((data) => {
+            saveStopList(data);
+        });
+        updateStopList(pos+1);
+    }
+}
+
+function saveStopList(data, pos) {
+    if (pos === undefined) {
+        saveStopList(data, 0);
+    } else if (pos < data.stops.length) {
+        saveStopEntry(data.route, data.isReverse ? data.stops.length-pos : pos+1, data.isReverse, data.stops[pos].longitude, data.stops[pos].latitude, data.stops[pos].name).then(() => {
+            saveStopList(data, pos+1);
+        });
+    }
+}
+
+function saveStopEntry(route, sn, isReverse, longitude, latitude, name) {
+    // debug(`saveStopEntry(${route}, ${sn}, ${isReverse}, ${longitude}, ${latitude}, ${name})`)
+    return db.query(   `INSERT INTO Bus_stop (route, sn, is_reverse, longitude, latitude, name) ` +
+                `VALUES(${route}, ${sn}, ${isReverse}, ${longitude}, ${latitude}, "${name}") ` +
+                `ON DUPLICATE KEY UPDATE longitude=${longitude}, latitude=${latitude}, name="${name}"`
+    ).catch((err) => {
+        console.log(err);
+    });
+}
+
 module.exports.updateBusTable = updateBusTable;
 module.exports.updateRealTime = updateRealTime;
 module.exports.updateRouteList = updateRouteList;
+module.exports.updateStopList = updateStopList;
