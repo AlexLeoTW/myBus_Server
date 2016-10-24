@@ -106,7 +106,7 @@ router.get('/lineStatus', (req, res) => {
 });
 
 router.post('/reservation',
-    passport.authenticate('standard',{session: false}), (req, res) => {
+    passport.authenticate('standard', {session: false}), (req, res) => {
     // INSERT INTO `Reservation_List`(`UUID`, `route`, `is_reverse`, `from_sn`, `to_sn`) VALUES ('B397A7F7',160,false,1,3)
     try {
         sqlEscape.escapeParam(req.body,
@@ -121,6 +121,17 @@ router.post('/reservation',
         res.json({
             description: err.message
         });
+        return;
+    }
+
+    if (req.user.UUID !== req.body.UID.substring(1, req.body.UID.length-1) &&
+        http_auth.permissionLevel[req.user.permission] < http_auth.permissionLevel.arduino) {
+        console.log('out');
+        res.status(401);
+        res.json({
+            description: `you are not ${req.body.UID}`
+        });
+        return;
     }
 
     var query = `INSERT INTO \`Reservation_List\`(\`UID\`, \`route\`, \`is_reverse\`, \`from_sn\`, \`to_sn\`) ` +
