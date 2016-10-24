@@ -36,9 +36,10 @@ var auth = {};
 
 // TODO: only check password for existing account.
 auth.authenticate = function (permissionReq, uuid, password, done) {
-    var user = {};
-    user.uuid = uuid;
-    user.password = password;
+    var user = {
+        uuid: uuid,
+        password: password
+    };
 
     try {
         sqlEscape.escapeParam(user,
@@ -120,3 +121,4 @@ for (var level in permissionLevel) {
 //passport.use(level, new BasicStrategy(auth.authenticate.bind(null, level)));
 
 module.exports = auth;
+module.exports.permissionLevel = permissionLevel;
