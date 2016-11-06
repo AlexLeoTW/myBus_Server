@@ -51,7 +51,9 @@ auth.authenticate = function (permissionReq, uuid, password, done) {
     }
 
     getUser(user).then((user) => {
-        if (permissionLevel[user.permission] >= permissionLevel[permissionReq]) {
+        if (typeof user === 'undefined') { // user doesn't exist OR wong password
+            return done(null, false);
+        } else if (permissionLevel[user.permission] >= permissionLevel[permissionReq]) {
             return done(null, user);
         } else {
             return done(null, false);
