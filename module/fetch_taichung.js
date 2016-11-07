@@ -200,7 +200,7 @@ function parsetArrivalList(data, isReverse) {
         //{hour: 0, minute: 0}
     ];
     var rows = data.split('_|');
-    console.log(data);
+    //console.log(data);
 
     var i = 0;
     if (isReverse) {
