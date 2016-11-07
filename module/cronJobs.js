@@ -116,18 +116,25 @@ function updateRealTime(pos) {
         updateRealTime(0);
     } else if (pos < routeToFetch.length) {
         var mergedData;
-        taichung.fetchBusStatus(routeToFetch[pos].route, routeToFetch[pos].isReverse, 9)
-        .then(mergeWithStopInfo).then((data) => {
-            mergedData = data;
-        }).then(() => {
-            debug(`Update realtime data for route ${mergedData.route} ${mergedData.isReverse?'foward':'reverse'}`);
-        }).then(() => {
-            return saveBusArrival(mergedData);
-        }).then(() => {
-            return saveBusStatus(mergedData);
-        }).then(() => {
-            updateRealTime(pos+1);
-        });
+        db.query(`SELECT COUNT(*) AS total FROM \`Bus_stop\` WHERE \`route\` = ${routeToFetch[pos].route} AND \`is_reverse\` = ${routeToFetch[pos].isReverse}`)
+            .then((data) => {
+                return taichung.fetchBusStatus(routeToFetch[pos].route, routeToFetch[pos].isReverse, data.total);
+            })
+            .then(mergeWithStopInfo)
+            .then((data) => {
+                mergedData = data;
+                debug(`Update realtime data for route ${mergedData.route} ${mergedData.isReverse?'foward':'reverse'} [ ${mergedData.stopInfo.length} stops, ${mergedData.busInfo.length} bus online ]`);
+                //console.log(JSON.stringify(data));
+            })
+            .then(() => {
+                return saveBusArrival(mergedData);
+            })
+            .then(() => {
+                return saveBusStatus(mergedData);
+            })
+            .then(() => {
+                updateRealTime(pos+1);
+            });
     }
 }
 
