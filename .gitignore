@@ -36,6 +36,9 @@ sql_config.js
 ssl_config.js
 ssl
 
+# API Keys
+api_keys.js
+
 # Test data fetch/input
 Testing/fetch_taichung_rev1/result.txt
 Testing/fetch_taichung_rev1/data.txt
