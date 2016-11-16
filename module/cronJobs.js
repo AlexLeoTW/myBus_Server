@@ -123,8 +123,7 @@ function updateRealTime(pos) {
             .then(mergeWithStopInfo)
             .then((data) => {
                 mergedData = data;
-                debug(`Update realtime data for route ${mergedData.route} ${mergedData.isReverse?'foward':'reverse'} [ ${mergedData.stopInfo.length} stops, ${mergedData.busInfo.length} bus online ]`);
-                //console.log(JSON.stringify(data));
+                debug(`Updating realtime data for route ${mergedData.route} ${mergedData.isReverse?'foward':'reverse'} [ ${mergedData.stopInfo.length} stops, ${mergedData.busInfo.length} bus online ]`);
             })
             .then(() => {
                 return saveBusArrival(mergedData);
@@ -134,21 +133,19 @@ function updateRealTime(pos) {
             })
             .then(() => {
                 updateRealTime(pos+1);
+            })
+            .catch((err) => {
+                debug(`ERROR when Updating realtime data for route ${mergedData.route} ${mergedData.isReverse?'foward':'reverse'}`);
+                console.error(err);
             });
     }
 }
 
 function mergeWithStopInfo(arrivalTime) {
-    return db.getConnection().then((connection) => {
-        return connection.query(`SELECT * FROM \`Bus_stop\` WHERE \`route\`=${arrivalTime.route} AND \`is_reverse\`=${arrivalTime.isReverse}`)
+    return db.query(`SELECT * FROM \`Bus_stop\` WHERE \`route\`=${arrivalTime.route} AND \`is_reverse\`=${arrivalTime.isReverse}`)
         .then((rows) => {
             return taichung.mergeBusStatus(arrivalTime, rows);
-        }).catch((err) => {
-            console.log(err);
-        }).finally(() => {
-            db.releaseConnection(connection);
         });
-    });
 }
 
 function saveBusArrival(data, connection) {
@@ -157,9 +154,7 @@ function saveBusArrival(data, connection) {
         db.releaseConnection(connection);
     } else if (connection === undefined) {
         return db.getConnection().then((connection) => {
-            clearBusArrival(data, connection).then(() => {
-                saveBusArrival(data, connection);
-            });
+            saveBusArrival(data, connection);
         });
     } else {
         var stopInfo = data.stopInfo.pop();
@@ -171,32 +166,24 @@ function saveBusArrival(data, connection) {
     }
 }
 
-function clearBusArrival(config, connection) {
-    //debug(`clearBusArrival(${config.route}, ${config.isReverse})`);
-    return connection.query(`DELETE FROM \`Bus_arrival\` WHERE \`route\`=${config.route} AND \`is_reverse\`=${config.isReverse}`)
-    .catch((err) => {
-        console.log(err);
-    });
+// TODO ERROR retry
+// INSERT or UPDATE
+function saveBusArrivalEntry(data, connection, errCounter) {
+    // INSERT INTO `Bus_arrival` VALUES (1,2,false,'2010-01-19 03:14:07') ON DUPLICATE KEY UPDATE `prediction`='2020-01-19 03:14:07'
+    return connection.query(`INSERT INTO \`Bus_arrival\`(\`route\`,\`sn\`,\`is_reverse\`,\`prediction\`) VALUES (${data.route},${data.sn},${data.isReverse},'${util.toSqlTimestamp(data.nextBus.timestamp)}') ON DUPLICATE KEY UPDATE \`prediction\`='${util.toSqlTimestamp(data.nextBus.timestamp)}'`);
 }
 
-function saveBusArrivalEntry(data, connection) {
-    //debug(`saveBusArrivalEntry({route: ${data.route}, sn: ${data.sn}, isReverse: ${data.isReverse}})`);
-    //console.log(`saveBusArrivalEntry({route: ${data.route}, sn: ${data.sn}, isReverse: ${data.isReverse}})`);
-    return connection.query(`INSERT INTO \`Bus_arrival\`(\`route\`, \`sn\`, \`is_reverse\`, \`prediction\`) VALUES (${data.route},${data.sn},${data.isReverse},'${util.toSqlTimestamp(data.nextBus.timestamp)}')`)
-    .catch((err) => {
-        console.log(err);
-    });
-}
-
+// TODO Enhance ERROR handling
 function saveBusStatus(data, connection) {
     //console.log(`saveBusStatus(${data}, ${connection})`);
-    if (data.busInfo === null || data.busInfo.length <= 0) {
-        if (connection !== undefined) {
-            db.releaseConnection(connection);
-        }
+
+    if ((data.busInfo === null || data.busInfo.length <= 0) && connection !== undefined) {
+        // release connection when all data stored
+        db.releaseConnection(connection);
     } else if (connection === undefined) {
+        // start from here!
         return db.getConnection().then((connection) => {
-            return clearBusOutdated(connection).then(() => {
+            return clearOutdatedBus(connection).then(() => {
                 saveBusStatus(data, connection);
             });
         });
@@ -205,34 +192,35 @@ function saveBusStatus(data, connection) {
         busData.route = data.route;
         busData.isReverse = data.isReverse;
 
-        return updateBusStatus(busData, connection).then(() => {
+        return updateBusStatusEntry(busData, connection).then(() => {
             saveBusStatus(data, connection);
         });
     }
 }
 
-function clearBusOutdated(connection) {
-    //debug("clear outdated bus");
+function clearOutdatedBus(connection) {
+    // remove entry over 30 min
     return connection.query(`DELETE FROM \`Bus_status\` WHERE ABS(\`last_update\`-CURRENT_TIMESTAMP) > 1800`)
     .catch((err) => {console.log(err);});
 }
 
-/* ========================================================================================================= */
-
-function updateBusStatus(data, connection) {
-    //debug(`updateBusStatus(${data.plate_no})`);
-    //console.log(`updateBusStatus(${data.plate_no})`);
-    return connection.query(`INSERT INTO \`Bus_status\`(\`plate_number\`, \`route\`, \`closestStop\`, \`nextStop\`, \`longitude\`, \`latitude\`, \`is_reverse\`) \
-    VALUES ('${data.plate_no}', ${data.route}, ${data.closestStop}, ${data.nextStop}, ${data.longitude}, ${data.latitude}, ${data.isReverse})`)
-    .catch((err) => {
-        if (err.code.includes('ER_DUP_ENTRY')) {
-            connection.query(`UPDATE \`Bus_status\` SET \`plate_number\`='${data.plate_no}',\`route\`=${data.route},\`closestStop\`=${data.closestStop},\`nextStop\`=${data.nextStop},\`longitude\`=${data.longitude},\`latitude\`=${data.latitude},\`is_reverse\`=${data.isReverse},\`last_update\`=CURRENT_TIMESTAMP \
-                            WHERE \`plate_number\`='${data.plate_no}'`);
-        } else {
-            console.log(err);
-        }
-    });
+function updateBusStatusEntry(data, connection) {
+    // INSERT INTO `Bus_status`(`plate_number`, `route`, `closestStop`, `nextStop`, `longitude`, `latitude`, `is_reverse`)
+    // VALUES ('503-U9', 160, 4, 3, 120.635368, 24.151159, true)
+    // ON DUPLICATE KEY
+    // UPDATE`plate_number`='503-U9',`route`=160,`closestStop`=4,`nextStop`=3,`longitude`=120.635368,`latitude`=24.151159,`is_reverse`=true,`last_update`=CURRENT_TIMESTAMP
+    return connection.query('INSERT INTO `Bus_status`(`plate_number`, `route`, `closestStop`, `nextStop`, `longitude`, `latitude`, `is_reverse`) ' +
+                            `VALUES ('${data.plate_no}', ${data.route}, ${data.closestStop}, ${data.nextStop}, ${data.longitude}, ${data.latitude}, ${data.isReverse}) ` +
+                            'ON DUPLICATE KEY ' +
+                            `UPDATE \`plate_number\`='${data.plate_no}',\`route\`=${data.route},\`closestStop\`=${data.closestStop},\`nextStop\`=${data.nextStop},\`longitude\`=${data.longitude},\`latitude\`=${data.latitude},\`is_reverse\`=${data.isReverse},\`last_update\`=CURRENT_TIMESTAMP`
+                        )
+        .catch((err) => {
+            debug(`ERROR when updating bus info ${JSON.stringify(data)}`);
+            console.error(err);
+        });
 }
+
+/* ========================================================================================================= */
 
 function updateRouteList() {
     return taichung.fetchRouteList().then((routeList) => {
