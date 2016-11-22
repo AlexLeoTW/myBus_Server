@@ -158,6 +158,37 @@ router.post('/reservation',
     });
 });
 
+router.delete('/reservation', (req, res) => {
+    // DELETE FROM `Reservation_List` WHERE `Reservation_List`.`UID` = 'b397a7f7'
+    passport.authenticate('standard', {session: false}, (req, res) => {
+        try {
+            sqlEscape.escapeParam(req.query,
+                'UID', null
+            );
+        } catch (err) {
+            res.status(406);
+            res.json({
+                description: err.message
+            });
+            return;
+        }
+    });
+
+    db.query(`DELETE FROM \`Reservation_List\` WHERE \`Reservation_List\`.\`UID\` = '${req.query.UID}'`)
+        .then( (result, err) => {
+            if (result.affectedRows > 0) {
+                res.status(200);
+                res.json({
+                    description: `Delete ${result.affectedRows} reservation`
+                });
+            } else {
+                res.status(404);
+                res.json({
+                    description: 'You have NOT make any reservation yet'
+                });
+            }
+        });
+});
 router.post('/environment', (req, res) => {
     // INSERT INTO `Weather` (`route`, `sn`, `is_reverse`, `humidity`, `temperature`, `timestamp`) VALUES ('160', '2', '0', '50', '32', CURRENT_TIMESTAMP);
     // UPDATE `Weather` SET `route`='160',`sn`='2',`is_reverse`='true',`humidity`='50',`temperature`='32',`timestamp`=NOW() WHERE `route`='160' AND `sn`='2' AND `is_reverse`='true'
