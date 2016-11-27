@@ -196,6 +196,56 @@ router.delete('/reservation',
         }
     });
 
+router.get('/reservation',
+    (req, res) => {
+        try {
+            sqlEscape.escapeParam(req.query,
+                'plate_number', null
+            );
+        } catch (err) {
+            //console.log(res);
+            res.status(406);
+            res.json({
+                description: err.message
+            });
+            return;
+        }
+
+        var result = {
+            route: 0,
+            is_reverse: false,
+            sn: 0,
+            onBoard: 0,
+            offBoard: 0
+        };
+
+        db.query(`SELECT * FROM \`Bus_status\` WHERE \`plate_number\`=${req.query.plate_number}`)
+            .then( (rows) => {
+                var bus = rows[0];
+                result.route = bus.route;
+                result.is_reverse = bus.is_reverse;
+                result.sn = bus.nextStop;
+                return db.query('SELECT `from_sn`,`to_sn` FROM `Reservation_List` ' +
+                    `WHERE \`route\` = ${bus.route} AND \`is_reverse\`=${bus.is_reverse} AND \`to_sn\`=${bus.nextStop} OR \`from_sn\`=${bus.nextStop} `);
+            })
+            .then ( (rows) => {
+                for (var i = 0; i < rows.length; i++) {
+                    if ( rows[i].from_sn === result.sn ) {
+                        result.onBoard++;
+                    } else if ( rows[i].to_sn === result.sn ) {
+                        result.offBoard++;
+                    }
+                }
+                res.status(200);
+                res.json(result);
+            });
+            // .catach( (err) => {
+            //     console.error(err);
+            //     res.status(500);
+            //     res.json({description: 'DB ERROR'});
+            // });
+    });
+
 router.post('/environment', (req, res) => {
     // INSERT INTO `Weather` (`route`, `sn`, `is_reverse`, `humidity`, `temperature`, `timestamp`) VALUES ('160', '2', '0', '50', '32', CURRENT_TIMESTAMP);
     // UPDATE `Weather` SET `route`='160',`sn`='2',`is_reverse`='true',`humidity`='50',`temperature`='32',`timestamp`=NOW() WHERE `route`='160' AND `sn`='2' AND `is_reverse`='true'
