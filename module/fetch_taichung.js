@@ -470,6 +470,7 @@ function fetchStopList(config) {
     return new Promise((resolve, reject) => {
         request.post({
             url:'http://citybus.taichung.gov.tw/iTravel/RealRoute/aspx/RealRoute.ashx',
+            followAllRedirects: true,
             form: {
                 Type: 'GetStop',
                 Data: `${config.route}_,${config.isReverse ? 2 : 1}`,
