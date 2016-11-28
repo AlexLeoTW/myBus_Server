@@ -16,7 +16,7 @@ var sql_config = require('../sql_config');
 var db = mysql.createPool(sql_config.db);
 
 router.get('/route', (req, res) => {
-    debug(JSON.stringify(req.query));
+    //debug(JSON.stringify(req.query));
     if (req.query.route) {
         var query = `SELECT * FROM \`Bus_stop\` WHERE \`route\`=${Number(req.query.route)}`;
         db.query(query).then((rows, field)=>{
@@ -92,7 +92,7 @@ router.get('/lineStatus', (req, res) => {
         query += `ORDER BY ABS(closestStop-${req.query.sn})`;
     }
 
-    debug(query);
+    //debug(query);
     res.set("Connection", "close");
     db.query(query).then((rows) => {
         if (rows.length === 0) {
