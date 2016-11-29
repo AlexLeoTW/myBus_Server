@@ -17,7 +17,7 @@ db.once('open', function() {
     console.log("connected");
 });
 
-var kittySchema = mongoose.Schema({
+var kittySchema = new mongoose.Schema({
     name: { type: String, required: true, index: { unique: true }, trim: true }
 });
 
