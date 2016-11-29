@@ -135,7 +135,7 @@ router.post('/reservation',
     }
 
     var query = `INSERT INTO \`Reservation_List\`(\`UID\`, \`route\`, \`is_reverse\`, \`from_sn\`, \`to_sn\`) ` +
-                `VALUES (${req.body.UID},${req.body.route},${(req.body.from_sn<req.body.to_sn)},${req.body.from_sn},${req.body.to_sn})`;
+                `VALUES (${req.body.UID},${req.body.route},${(req.body.from_sn>req.body.to_sn)},${req.body.from_sn},${req.body.to_sn})`;
     db.query(query).then((rows, field) => {
         res.json({description: "Register OK"});
     }, (err) => {
