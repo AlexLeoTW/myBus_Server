@@ -238,7 +238,9 @@ function passengerOnboard (bus, connection) {
     return connection.query(`UPDATE \`Reservation_List\` SET \`onboard\`=1 ` +
                     `WHERE \`route\`=${bus.route} AND \`is_reverse\`=${bus.isReverse} AND \`from_sn\`=${bus.closestStop} AND \`onboard\`=0;`)
         .then( (result) => {
-            debug(`Estimate [${result.affectedRows}] person on board ${bus.plate_no} @${bus.route}:${bus.isReverse?'foward':'reverse'}:${bus.closestStop}`);
+            if (result.affectedRows > 0) {
+                debug(`Estimate [${result.affectedRows}] person on board ${bus.plate_no} @${bus.route}:${bus.isReverse?'foward':'reverse'}:${bus.closestStop}`);
+            }
         })
         .catch( (err) => {
             console.error(`ERROR when updating Reservation_List for ${bus.plate_no}`);
@@ -252,7 +254,9 @@ function tripFinish (bus, connection) {
     return connection.query(`DELETE FROM \`Reservation_List\` ` +
                             `WHERE \`route\`=${bus.route} AND \`is_reverse\`=${bus.isReverse} AND \`to_sn\`=${bus.closestStop} AND \`onboard\`=true`)
         .then( (result) => {
-            debug(`Estimate [${result.affectedRows}] person off board ${bus.plate_no} @${bus.route}:${bus.isReverse?'foward':'reverse'}:${bus.closestStop}`);
+            if (result.affectedRows > 0) {
+                debug(`Estimate [${result.affectedRows}] person off board ${bus.plate_no} @${bus.route}:${bus.isReverse?'foward':'reverse'}:${bus.closestStop}`);
+            }
         })
         .catch( (err) => {
             console.error(`ERROR when deleteing Reservation_List for ${bus.plate_no}`);
