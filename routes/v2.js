@@ -246,6 +246,54 @@ router.get('/reservation',
             // });
     });
 
+router.post('/violation',
+    passport.authenticate('arduino', {session: false}),
+    (req, res) => {
+        try {
+            sqlEscape.escapeParam(req.body,
+                'plate_number', null
+            );
+        } catch (err) {
+            //console.log(res);
+            res.status(406);
+            res.json({
+                description: err.message
+            });
+            return;
+        }
+        // SELECT * FROM `Bus_status` WHERE `plate_number` = '287-U8'
+        db.query(`SELECT *  FROM \`Bus_status\` WHERE \`plate_number\` = ${req.body.plate_number}`)
+            .then( (rows) => {
+                var bus = rows[0];
+                return db.query('SELECT * FROM `Reservation_List` ' +
+                    `WHERE \`route\` = ${bus.route} AND \`is_reverse\`=${bus.is_reverse} AND \`to_sn\`=${bus.closestStop} OR \`from_sn\`=${bus.closestStop} `);
+            })
+            .then( (violations) => {
+                // INSERT INTO `violation_log` (`UID`, `vsn`, `route`, `from_sn`, `to_sn`, `timestamp`) VALUES ('00000000', NULL, '160', '1', '9', CURRENT_TIMESTAMP);
+                var query = '';
+                for (var i = 0; i < violations.length; i++) {
+                    query += 'INSERT INTO `violation_log` (`UID`, `vsn`, `route`, `from_sn`, `to_sn`, `timestamp`) ' +
+                                `VALUES ('${violations[i].UID}', NULL, '${violations[i].route}', '${violations[i].from_sn}', '${violations[i].to_sn}', CURRENT_TIMESTAMP); \n`;
+                    debug(`User ${violations[i].UID}' violation: [route:${violations[i].route}, from_sn:${violations[i].from_sn}, to_sn:${violations[i].to_sn}]`);
+                }
+                return db.query(query);
+            })
+            .then( (result) => {
+                res.status(200);
+                res.json({
+                    description: `${result.affectedRows} users loged as violation`
+                });
+            })
+            .catch( (err) => {
+                debug('err saving violation_log, may be the database is down.');
+                res.status(500);
+                res.json({
+                    description: 'error when saving violation log'
+                });
+            });
+    }
+);
+
 router.post('/environment', (req, res) => {
     // INSERT INTO `Weather` (`route`, `sn`, `is_reverse`, `humidity`, `temperature`, `timestamp`) VALUES ('160', '2', '0', '50', '32', CURRENT_TIMESTAMP);
     // UPDATE `Weather` SET `route`='160',`sn`='2',`is_reverse`='true',`humidity`='50',`temperature`='32',`timestamp`=NOW() WHERE `route`='160' AND `sn`='2' AND `is_reverse`='true'
