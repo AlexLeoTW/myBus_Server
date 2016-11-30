@@ -192,9 +192,13 @@ function saveBusStatus(data, connection) {
         busData.route = data.route;
         busData.isReverse = data.isReverse;
 
-        return updateBusStatusEntry(busData, connection).then(() => {
-            saveBusStatus(data, connection);
-        });
+        return updateBusStatusEntry(busData, connection)
+            .then( () => {
+                return updateReservation(busData, connection);
+            })
+            .then( () => {
+                saveBusStatus(data, connection);
+            });
     }
 }
 
@@ -217,6 +221,41 @@ function updateBusStatusEntry(data, connection) {
         .catch((err) => {
             debug(`ERROR when updating bus info ${JSON.stringify(data)}`);
             console.error(err);
+        });
+}
+
+// TODO auto update Reservation_List [Important MUST]
+function updateReservation (bus, connection) {
+    passengerOnboard(bus, connection).then( () => {
+            tripFinish(bus, connection);
+        });
+}
+
+function passengerOnboard (bus, connection) {
+    if (bus.closestStop !== bus.nextStop) {
+        return Promise.resolve("Success");
+    }
+    return connection.query(`UPDATE \`Reservation_List\` SET \`onboard\`=1 ` +
+                    `WHERE \`route\`=${bus.route} AND \`is_reverse\`=${bus.isReverse} AND \`from_sn\`=${bus.closestStop} AND \`onboard\`=0;`)
+        .then( (result) => {
+            debug(`Estimate [${result.affectedRows}] person on board ${bus.plate_no} @${bus.route}:${bus.isReverse?'foward':'reverse'}:${bus.closestStop}`);
+        })
+        .catch( (err) => {
+            console.error(`ERROR when updating Reservation_List for ${bus.plate_no}`);
+        });
+}
+
+function tripFinish (bus, connection) {
+    if (bus.closestStop !== bus.nextStop) {
+        return Promise.resolve("Success");
+    }
+    return connection.query(`DELETE FROM \`Reservation_List\` ` +
+                            `WHERE \`route\`=${bus.route} AND \`is_reverse\`=${bus.isReverse} AND \`to_sn\`=${bus.closestStop} AND \`onboard\`=true`)
+        .then( (result) => {
+            debug(`Estimate [${result.affectedRows}] person off board ${bus.plate_no} @${bus.route}:${bus.isReverse?'foward':'reverse'}:${bus.closestStop}`);
+        })
+        .catch( (err) => {
+            console.error(`ERROR when deleteing Reservation_List for ${bus.plate_no}`);
         });
 }
 
