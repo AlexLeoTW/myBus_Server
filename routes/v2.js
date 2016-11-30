@@ -106,57 +106,73 @@ router.get('/lineStatus', (req, res) => {
 });
 
 router.post('/reservation',
-    passport.authenticate('standard', {session: false}), (req, res) => {
-    // INSERT INTO `Reservation_List`(`UUID`, `route`, `is_reverse`, `from_sn`, `to_sn`) VALUES ('B397A7F7',160,false,1,3)
-    try {
-        sqlEscape.escapeParam(req.body,
-            'UID', null,
-            'route', {type: 'number'},
-            //'is_reverse', {optional: true},     // actually not needed anymore
-            'from_sn', {type: 'number'},
-            'to_sn', {type: 'number'}
-        );
-    } catch (err) {
-        res.status(406);
-        res.json({
-            description: err.message
-        });
-        return;
-    }
-
-    if (req.user.UUID !== req.body.UID.substring(1, req.body.UID.length-1) &&
-        http_auth.permissionLevel[req.user.permission] < http_auth.permissionLevel.arduino) {
-        console.log('out');
-        res.status(401);
-        res.json({
-            description: `you are not ${req.body.UID}`
-        });
-        return;
-    }
-
-    var query = `INSERT INTO \`Reservation_List\`(\`UID\`, \`route\`, \`is_reverse\`, \`from_sn\`, \`to_sn\`) ` +
-                `VALUES (${req.body.UID},${req.body.route},${(req.body.from_sn>req.body.to_sn)},${req.body.from_sn},${req.body.to_sn})`;
-    db.query(query).then((rows, field) => {
-        res.json({description: "Register OK"});
-    }, (err) => {
-        if (err.code.includes('ER_DUP_ENTRY')) {
-            debug(`Reservation with id ${req.body.UID} already exist, update`);
-            //UPDATE `Reservation_List` SET `route`=160,`is_reverse`=true,`from_sn`=5,`to_sn`=3 WHERE `UID`='b397a7f7'
-            query = `UPDATE \`Reservation_List\` SET \`route\`=${req.body.route},\`is_reverse\`=${(req.body.from_sn<req.body.to_sn)},\`from_sn\`=${req.body.from_sn},\`to_sn\`=${req.body.to_sn} WHERE \`UID\`=${req.body.UID}`;
-            db.query(query).then(() => {
-                res.json({description: "Register UPDATE OK"});
-            });
-        } else if (err.code.includes('ER_NO_REFERENCED_ROW')) {
-            res.status(400);
+    passport.authenticate('standard', {session: false}),
+    (req, res) => {
+        // INSERT INTO `Reservation_List`(`UUID`, `route`, `is_reverse`, `from_sn`, `to_sn`) VALUES ('B397A7F7',160,false,1,3)
+        try {
+            sqlEscape.escapeParam(req.body,
+                'UID', null,
+                'route', {type: 'number'},
+                //'is_reverse', {optional: true},     // actually not needed anymore
+                'from_sn', {type: 'number'},
+                'to_sn', {type: 'number'}
+            );
+        } catch (err) {
+            res.status(406);
             res.json({
-                description: 'Error you are not registered yet'
+                description: err.message
             });
-        } else {
-            res.status(500);
-            res.json({description: 'Unknown Error'});
+            return;
         }
-    });
-});
+
+        if (req.user.UUID !== req.body.UID.substring(1, req.body.UID.length-1) &&
+            http_auth.permissionLevel[req.user.permission] < http_auth.permissionLevel.arduino) {
+            console.log('out');
+            res.status(401);
+            res.json({
+                description: `you are not ${req.body.UID}`
+            });
+            return;
+        }
+
+        db.query(`SELECT COUNT(*) AS violationCount FROM \`violation_log\` WHERE \`UID\` = '00000000'`)
+            .then( (result) => {
+                if (result.violationCount > 3) {
+                    res.status(403);
+                    res.json({
+                        violationCount: result.violationCount,
+                        description: `You received perment ban for abuse our service over 3 times`
+                    });
+                } else {
+                    var query = `INSERT INTO \`Reservation_List\`(\`UID\`, \`route\`, \`is_reverse\`, \`from_sn\`, \`to_sn\`) ` +
+                                `VALUES (${req.body.UID},${req.body.route},${(req.body.from_sn>req.body.to_sn)},${req.body.from_sn},${req.body.to_sn})`;
+                    return db.query(query);
+                }
+            })
+            .then((rows, field) => {
+                res.status(200);
+                res.json({description: "Register OK"});
+            })
+            .catch( (err) => {
+                if (err.code.includes('ER_DUP_ENTRY')) {
+                    debug(`Reservation with id ${req.body.UID} already exist, update`);
+                    //UPDATE `Reservation_List` SET `route`=160,`is_reverse`=true,`from_sn`=5,`to_sn`=3 WHERE `UID`='b397a7f7'
+                    var query = `UPDATE \`Reservation_List\` SET \`route\`=${req.body.route},\`is_reverse\`=${(req.body.from_sn<req.body.to_sn)},\`from_sn\`=${req.body.from_sn},\`to_sn\`=${req.body.to_sn} WHERE \`UID\`=${req.body.UID}`;
+                    db.query(query).then(() => {
+                        res.json({description: "Register UPDATE OK"});
+                    });
+                } else if (err.code.includes('ER_NO_REFERENCED_ROW')) {
+                    res.status(400);
+                    res.json({
+                        description: 'Error you are not registered yet'
+                    });
+                } else {
+                    res.status(500);
+                    res.json({description: 'Unknown Error'});
+                }
+            });
+    }
+);
 
 router.delete('/reservation',
     passport.authenticate('standard', {session: false}), (req, res) => {
