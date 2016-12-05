@@ -125,5 +125,3 @@ function cacheAndReturn (options) {
 }
 
 module.exports.getMatrixEstimation = getMatrixEstimation;
-module.exports.setmentTimeCache = setmentTimeCache;
-module.exports.cacheAndReturn = cacheAndReturn;
