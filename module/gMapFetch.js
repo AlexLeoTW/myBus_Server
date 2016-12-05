@@ -11,7 +11,7 @@ const keys = require('../api_keys');
  * Google Maps Directions API
  *     config = {
  *         route: 160,
- *         is_reverse: true,
+ *         isReverse: true,
  *         from: 8,
  *         to: 7,
  *         [traffic_model: best_guess / pessimistic / optimistic]
@@ -19,11 +19,11 @@ const keys = require('../api_keys');
 */
 function estimate(config) {
     return db.query('SELECT * FROM `Google_Matrix_Points` ' +
-            `WHERE \`route\`=${config.route} AND \`is_reverse\`=${config.is_reverse} AND ` +
+            `WHERE \`route\`=${config.route} AND \`is_reverse\`=${config.isReverse} AND ` +
             '`sn` BETWEEN ' +
-            `(SELECT \`sn\` FROM \`Google_Matrix_Points\`WHERE \`route\`=${config.route} AND \`is_reverse\`=${config.is_reverse} AND \`stop_sn\`=${config.from}) ` +
+            `(SELECT \`sn\` FROM \`Google_Matrix_Points\`WHERE \`route\`=${config.route} AND \`is_reverse\`=${config.isReverse} AND \`stop_sn\`=${config.from_sn}) ` +
             `AND` +
-            `(SELECT \`sn\` FROM \`Google_Matrix_Points\`WHERE \`route\`=${config.route} AND \`is_reverse\`=${config.is_reverse} AND \`stop_sn\`=${config.to}) ` +
+            `(SELECT \`sn\` FROM \`Google_Matrix_Points\`WHERE \`route\`=${config.route} AND \`is_reverse\`=${config.isReverse} AND \`stop_sn\`=${config.to_sn}) ` +
             `ORDER BY \`sn\` ASC`)
         .then((rows) => {
             var gMapGet = {
@@ -32,6 +32,7 @@ function estimate(config) {
                     origin: `${rows[0].latitude}, ${rows[0].longitude}`,
                     destination: `${rows[rows.length-1].latitude}, ${rows[rows.length-1].longitude}`,
                     key: keys.gmap,
+                    //traffic_model: config.traffic_model,
                     waypoints: '' //'Charlestown,MA|via:Lexington,MA'
                 },
                 headers: {
@@ -40,6 +41,10 @@ function estimate(config) {
                 json: true // Automatically parses the JSON string in the response
             };
 
+            if (config.traffic_model) {
+                gMapGet.traffic_model = config.traffic_model;
+            }
+
             for(var i=1; i<rows.length-1; i++) {
                 gMapGet.qs.waypoints += `via:${rows[rows.length-1].latitude},${rows[rows.length-1].longitude}|`;
             }
@@ -47,8 +52,24 @@ function estimate(config) {
 
             return request(gMapGet);
         })
-        .then(function (repos) {
-            return repos.routes[0].legs[0].duration;
+        .then(function (body) {
+            var result = {
+                route: config.route,
+                isReverse: config.isReverse,
+                from_sn: config.from_sn,
+                to_sn: config.to_sn,
+                time: {
+                    // best_guess: Date,
+                    // pessimistic: Date
+                }
+            };
+            if (config.traffic_model) {
+                result.time[config.traffic_model] = body.routes[0].legs[0].duration.value;
+            } else {
+                result.time.best_guess = body.routes[0].legs[0].duration.value;
+            }
+
+            return result;
         })
         .catch(function (err) {
             console.error(err);
