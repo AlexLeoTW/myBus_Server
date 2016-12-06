@@ -58,7 +58,6 @@ function estimate(config) {
 //     {longitude: 120.683912, latitude: 24.136519},
 // ];
 function estimateByWayPoints(points, traffic_model) {
-    console.log('ding!!');
     var gMapGet = {
         uri: 'https://maps.googleapis.com/maps/api/directions/json',
         qs: {
@@ -83,8 +82,6 @@ function estimateByWayPoints(points, traffic_model) {
     }
     gMapGet.qs.waypoints = gMapGet.qs.waypoints.substring(0, gMapGet.qs.waypoints.length-1); // remove ending '|'
 
-    console.log('fire!!');
-    console.log(JSON.stringify(gMapGet));
     return request(gMapGet)
         .then( (response) => {
             return response.routes[0].legs[0].duration.value;
@@ -126,11 +123,10 @@ function estimateFromLocation(config) {
             var waypoints = [];
 
             var square = squareLocate(config.from, rows);
-            console.log(`square=${JSON.stringify(square)}`);
             waypoints.push(config.from);
-            console.log(`push [${JSON.stringify(config.from)}]`);
+            // console.log(`push [${JSON.stringify(config.from)}]`);
             waypoints.push(square.square[1]);
-            console.log(`push [${JSON.stringify(square.square[1])}]`);
+            // console.log(`push [${JSON.stringify(square.square[1])}]`);
 
             var i;
             for (i=0; i<rows.length; i++) {
@@ -140,10 +136,10 @@ function estimateFromLocation(config) {
             }
             for (; rows[i].type !== 'stop'; i++) {
                 waypoints.push(rows[i]);
-                console.log(`push [${JSON.stringify(rows[i])}]`);
+                // console.log(`push [${JSON.stringify(rows[i])}]`);
             }
             waypoints.push(rows[i]);
-            console.log(`push [${JSON.stringify(rows[i])}]`);
+            // console.log(`push [${JSON.stringify(rows[i])}]`);
             result.to = {
                 sn: rows[i].sn,
                 longitude: rows.longitude,
