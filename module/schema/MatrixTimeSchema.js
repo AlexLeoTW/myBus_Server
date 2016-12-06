@@ -4,20 +4,17 @@ const mongoose = require('mongoose');
 const mongoose_config = require('../../mongoose_config');
 mongoose.Promise = global.Promise;
 
-// var opts = {
-//     server: { auto_reconnect: false },
-//     user: mongoose_config.user,
-//     pass: mongoose_config.password
-// };
-// db = mongoose.createConnection(
-//     mongoose_config.host,
-//     mongoose_config.database,
-//     mongoose_config.port,
-//     opts
-// );
-
-var opts = { server: { auto_reconnect: false }, user: mongoose_config.user, pass: mongoose_config.password };
-db = mongoose.createConnection(mongoose_config.host, mongoose_config.database, mongoose_config.port, opts);
+var opts = {
+    server: { auto_reconnect: false },
+    user: mongoose_config.user,
+    pass: mongoose_config.password
+};
+db = mongoose.createConnection(
+    mongoose_config.host,
+    mongoose_config.database,
+    mongoose_config.port,
+    opts
+);
 
 var timeSchema = mongoose.Schema({
     route: { type: String, required: true},
