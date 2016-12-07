@@ -84,6 +84,9 @@ function estimateByWayPoints(points, traffic_model) {
 
     return request(gMapGet)
         .then( (response) => {
+            if (response.status === 'NOT_FOUND') {
+                console.error('ERROR when estimateByWayPoints(), no route were found');
+            }
             return response.routes[0].legs[0].duration.value;
         });
 }
