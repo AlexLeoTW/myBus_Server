@@ -12,6 +12,10 @@ const MatrixTime = require('./schema/MatrixTimeSchema').MatrixTime;
 //     to_sn: Number
 // };
 function getMatrixEstimation (options/*: Object*/, result) { // exports
+    if ((options.to_sn - options.from_sn) * (options.isReverse ? -1 : 1) < 0) {
+        throw new Error(`from ${options.from_sn} to ${options.to_sn} is not ${options.isReverse?'reverse':'foward'}`);
+    }
+
     if (!options || options.from_sn === options.to_sn) {    // END
         return result;
     } else if (!result) {                                   // Initial
