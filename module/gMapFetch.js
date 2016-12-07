@@ -132,21 +132,24 @@ function estimateFromLocation(config) {
             waypoints.push(square.square[1]);
             // console.log(`push [${JSON.stringify(square.square[1])}]`);
 
-            for (i=0; i<rows.length; i++) {
-                if (rows[i].sn > square.square[1].sn) {
-                    break;
+            if (waypoints[1].type === 'waypoint') {
+                for (i=0; i<rows.length; i++) {
+                    if (rows[i].sn > square.square[1].sn) {
+                        break;
+                    }
                 }
-            }
-            for (; rows[i].type !== 'stop'; i++) {
+                for (; rows[i].type !== 'stop'; i++) {
+                    waypoints.push(rows[i]);
+                    // console.log(`push [${JSON.stringify(rows[i])}]`);
+                }
                 waypoints.push(rows[i]);
                 // console.log(`push [${JSON.stringify(rows[i])}]`);
             }
-            waypoints.push(rows[i]);
-            // console.log(`push [${JSON.stringify(rows[i])}]`);
+
             result.to = {
-                sn: rows[i].stop_sn,
-                longitude: rows[i].longitude,
-                latitude: rows[i].latitude
+                sn: waypoints[waypoints.length-1].stop_sn,
+                longitude: waypoints[waypoints.length-1].longitude,
+                latitude: waypoints[waypoints.length-1].latitude
             };
 
             return waypoints;
