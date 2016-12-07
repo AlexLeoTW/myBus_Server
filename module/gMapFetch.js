@@ -121,6 +121,7 @@ function estimateFromLocation(config) {
         .then( (rows) => {
             // from location to nextStop
             var waypoints = [];
+            var i;
 
             var square = squareLocate(config.from, rows);
             waypoints.push(config.from);
@@ -128,7 +129,6 @@ function estimateFromLocation(config) {
             waypoints.push(square.square[1]);
             // console.log(`push [${JSON.stringify(square.square[1])}]`);
 
-            var i;
             for (i=0; i<rows.length; i++) {
                 if (rows[i].sn > square.square[1].sn) {
                     break;
@@ -141,8 +141,8 @@ function estimateFromLocation(config) {
             waypoints.push(rows[i]);
             // console.log(`push [${JSON.stringify(rows[i])}]`);
             result.to = {
-                sn: rows[i].sn,
-                longitude: rows.longitude,
+                sn: rows[i].stop_sn,
+                longitude: rows[i].longitude,
                 latitude: rows[i].latitude
             };
 
