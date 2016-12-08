@@ -15,6 +15,9 @@ var mysql = require('promise-mysql');
 var sql_config = require('../sql_config');
 var db = mysql.createPool(sql_config.db);
 
+// BusArrival /w gMapFetch
+const BusArrival = require('../module/BusArrival');
+
 router.get('/route', (req, res) => {
     //debug(JSON.stringify(req.query));
     if (req.query.route) {
@@ -48,12 +51,21 @@ router.post('/register', (req, res) => {
 });
 
 router.get('/busArrival', (req, res) => {
-    if (req.query.route === undefined) {
-        res.status(400);
+    try {
+        sqlEscape.escapeParam(req.query,
+            'route', {type: 'number', optional: false},
+            'is_reverse', {type: 'boolean', optional: false},
+            'original', {type: 'boolean', optional: true}
+        );
+    } catch (err) {
+        res.status(406);
         res.json({
-            description: 'Too few arguments (missing route)'
+            description: err.message
         });
-    } else {
+        return;
+    }
+
+    if (req.query.original) {
         var query = `SELECT * FROM \`Bus_arrival\` WHERE \`route\` = ${req.query.route} `;
         if (req.query.is_reverse !== undefined) {
             query += `AND \`is_reverse\` = ${sqlEscape.escapeBoolean(req.query.is_reverse)}`;
@@ -62,9 +74,15 @@ router.get('/busArrival', (req, res) => {
             if (rows.length === 0) {
                 res.send(JSON.stringify(null));
             } else {
-                res.send(JSON.stringify(rows));
+                res.json(rows);
             }
         });
+    } else {
+        BusArrival.arrivalList({
+            route: req.query.route,
+            isReverse: req.query.is_reverse
+        })
+        .then(res.json);
     }
 });
 
