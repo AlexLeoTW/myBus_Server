@@ -23,7 +23,6 @@ function updateArrivalPerBus(rows) {
         .then( (busData) => {
             debug(`Cacheing [${busData.plate_no}]`);
             return BusArrival.findOneAndUpdate({plate_number: busData.plate_no}, busData, {upsert: true}).exec();
-            // busData.save();
         })
         .then( (obj) => {
             updateArrivalPerBus(rows);
@@ -52,11 +51,12 @@ function buildDataObj(bus) {
     //     ],
     //     lastUpdate: { type: Date, default: Date.now }
     // }
-    var busData = new BusArrival({
+    var busData = {
         plate_no: bus.plate_number,
         route: bus.route,
-        is_reverse: bus.is_reverse
-    });
+        is_reverse: bus.is_reverse,
+        arrival: []
+    };
     var nextStopOffset = {
         // optimistic: 0,
         // best_guess: 0,
@@ -72,9 +72,13 @@ function buildDataObj(bus) {
         },
     })
     .then( (nextStop) => {
-        busData.setArrival({
-            stopSn: nextStop.to.sn,
-            second: nextStop.time
+        busData.arrival.push({
+            sn: nextStop.to.sn,
+            time: {
+                optimistic: new Date(Date.now() + nextStop.time.optimistic*1000),
+                best_guess: new Date(Date.now() + nextStop.time.best_guess*1000),
+                pessimistic: new Date(Date.now() + nextStop.time.pessimistic*1000)
+            }
         });
         nextStopOffset = nextStop.time;
     })
@@ -147,5 +151,56 @@ function getMatrixEstimationList(options, result) {
     }
 }
 
+// -----------------------------------------------------------------------------
+
+// options = {
+//         route: 160,
+//         isReverse: false
+// };
+function arrivalList(options) {
+    // var cityBusArrival = db.query(`SELECT * FROM \`Bus_arrival\` WHERE \`route\` = ${options.route} AND \`is_reverse\` = ${options.isReverse} `);
+    // var busList = BusArrival.find({
+    //     route: options.route,
+    //     is_reverse: options.isReverse
+    // }).exec();
+    var cityBusArrival,
+        busList;
+
+    return db.query(`SELECT * FROM \`Bus_arrival\` WHERE \`route\` = ${options.route} AND \`is_reverse\` = ${options.isReverse} `)
+    .then((result) => {
+        cityBusArrival = result;
+
+        return BusArrival.find({
+            route: options.route,
+            is_reverse: options.isReverse
+        }).exec();
+    })
+    .then( (result) => {
+        busList = result;
+    })
+    //return Promise.all(aa, bb)
+    .then((values) => {
+        var overwriteMap = [];
+
+        // var cityBusArrival = values[0],
+        //     busList = values[1];
+        for (var i=0; i<busList.length; i++) {
+
+            for(var j=0; j<busList[i].arrival.length; j++) {
+                var nowSn = busList[i].arrival[j].sn;
+                var nowTime = busList[i].arrival[j].time.best_guess;
+
+                if (!overwriteMap[nowSn-1] || nowTime < cityBusArrival[nowSn-1].prediction) {
+                    cityBusArrival[nowSn-1].prediction = nowTime;
+                    overwriteMap[nowSn-1] = true;
+                    // console.log(`cityBusArrival[${nowSn}].prediction = ${nowTime}`);
+                }
+            }
+        }
+        return cityBusArrival;
+    });
+}
+
 module.exports.updateArrivalMongo = updateArrivalMongo;
 module.exports.buildDataObj = buildDataObj;
+module.exports.arrivalList = arrivalList;
