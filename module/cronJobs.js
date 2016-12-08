@@ -6,6 +6,7 @@ var sql_config = require('../sql_config');
 var db = mysql.createPool(sql_config.db);
 var debug = require('debug')('myBus:cron');
 var util = require('./util');
+const BusArrival = require('./BusArrival');
 
 var taichung = require('./fetch_taichung');
 const routeToFetch = [
@@ -265,6 +266,12 @@ function tripFinish (bus, connection) {
 
 /* ========================================================================================================= */
 
+function updateGMapArrival() {
+    BusArrival.updateArrivalMongo();
+}
+
+/* ========================================================================================================= */
+
 function updateRouteList() {
     return taichung.fetchRouteList().then((routeList) => {
         return saveRouteList();
@@ -363,5 +370,6 @@ function saveStopEntry(route, sn, isReverse, longitude, latitude, name) {
 
 module.exports.updateBusTable = updateBusTable;
 module.exports.updateRealTime = updateRealTime;
+module.exports.updateGMapArrival = updateGMapArrival;
 module.exports.updateRouteList = updateRouteList;
 module.exports.updateStopList = updateStopList;

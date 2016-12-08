@@ -105,6 +105,10 @@ new CronJob('0 */2 * * * *', function () {
     cronJobs.updateRealTime();
 }, null, true, 'Asia/Taipei');
 
+new CronJob('0 */2 * * * *', function () {
+    cronJobs.updateGMapArrival();
+}, null, true, 'Asia/Taipei');
+
 new CronJob('0 0 1 1 * *', function () {
     cronJobs.updateStopList();
 }, null, true, 'Asia/Taipei');
