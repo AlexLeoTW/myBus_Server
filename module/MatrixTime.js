@@ -25,6 +25,7 @@ function getMatrixEstimation (options/*: Object*/, result) { // exports
             from_sn: options.from_sn,
             to_sn: options.to_sn,
             time: {
+                optimistic: 0,
                 best_guess: 0,
                 pessimistic: 0
             }
@@ -38,9 +39,10 @@ function getMatrixEstimation (options/*: Object*/, result) { // exports
             from_sn: options.from_sn,
             to_sn: options.from_sn + (options.isReverse?-1:1)
         })
-            .then( (time) => {
-                result.time.best_guess += time.time.best_guess;
-                result.time.pessimistic += time.time.pessimistic;
+            .then( (cache) => {
+                result.time.optimistic += cache.time.optimistic;
+                result.time.best_guess += cache.time.best_guess;
+                result.time.pessimistic += cache.time.pessimistic;
             })
             .then( () => {
                 options.from_sn += (options.isReverse?-1:1);
@@ -97,20 +99,10 @@ function cacheAndReturn (options) {
     })
     .then( (gmap) => {
         data = gmap;
+        // isReverse --rename--> is_reverse
         data.is_reverse = data.isReverse;
         delete data.isReverse;
-    })
-    .then( () => {
-        return gmap.estimate({
-            route: options.route,
-            isReverse: options.isReverse,
-            from_sn: options.from_sn,
-            to_sn: options.to_sn,
-            traffic_model: 'pessimistic'
-        });
-    })
-    .then( (gmap) => {
-        data.time.pessimistic = gmap.time.pessimistic;
+
         return (new MatrixTime(data)).save();
     })
     .then( () => {
@@ -122,6 +114,7 @@ function cacheAndReturn (options) {
         });
     })
     .then( (data) => {
+        // is_reverse --rename--> isReverse
         data.isReverse = data.is_reverse;
         delete data.is_reverse;
         return data;

@@ -22,13 +22,12 @@ var timeSchema = mongoose.Schema({
     from_sn: { type: Number, required: true},
     to_sn: { type: Number, required: true},
     time: {
+        optimistic: Number,
         best_guess: Number,
         pessimistic: Number
     },
-    lastUpdate: { type: Date, default: Date.now }
-}, {
-    // documents will be expired in ONE hour
-    createdAt: { type: Date, expires: 3600, default: Date.now }
+    lastUpdate:  { type: Date, expires: 1800, default: Date.now }
+    // documents will be expired in 30 minute
 });
 
 var MatrixTime = db.model('MatrixTime', timeSchema);
