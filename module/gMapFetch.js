@@ -6,6 +6,7 @@ var sql_config = require('../sql_config');
 var db = mysql.createPool(sql_config.db);
 const keys = require('../api_keys');
 const util = require('./util');
+const validTrafficModels = ['optimistic', 'best_guess', 'pessimistic'];
 
 
 /*
@@ -27,7 +28,13 @@ function estimate(config) {
             `(SELECT \`sn\` FROM \`Google_Matrix_Points\`WHERE \`route\`=${config.route} AND \`is_reverse\`=${config.isReverse} AND \`stop_sn\`=${config.to_sn}) ` +
             `ORDER BY \`sn\` ASC`)
         .then( (rows) => {
-            return estimateByWayPoints(rows, config.traffic_model);
+            if (typeof config.traffic_model === 'string') {
+                return estimateByWayPoints(rows, [config.traffic_model]);
+            } else if (config.traffic_model && config.traffic_model.length > 0) {
+                return estimateByWayPoints(rows, config.traffic_model);
+            } else {
+                return estimateByWayPoints(rows);
+            }
         })
         .then(function (response) {
             var result = {
@@ -40,11 +47,7 @@ function estimate(config) {
                     // pessimistic: Number
                 }
             };
-            if (config.traffic_model) {
-                result.time[config.traffic_model] = response;
-            } else {
-                result.time.best_guess = response;
-            }
+            result.time = response;
 
             return result;
         })
@@ -57,38 +60,87 @@ function estimate(config) {
 //     {longitude: 120.683912, latitude: 24.136519},
 //     {longitude: 120.683912, latitude: 24.136519},
 // ];
-function estimateByWayPoints(points, traffic_model) {
+function estimateByWayPoints(points, trafficModelList) {
     var gMapGet = {
-        uri: 'https://maps.googleapis.com/maps/api/directions/json',
-        qs: {
-            origin: `${points[0].latitude},${points[0].longitude}`,
-            destination: `${points[points.length-1].latitude},${points[points.length-1].longitude}`,
-            key: keys.gmap,
-            //traffic_model: config.traffic_model,
-            waypoints: '' //'Charlestown,MA|via:Lexington,MA'
-        },
-        headers: {
-            'User-Agent': 'Request-Promise'
-        },
-        json: true // Automatically parses the JSON string in the response
+        origin: `${points[0].latitude},${points[0].longitude}`,
+        destination: `${points[points.length-1].latitude},${points[points.length-1].longitude}`,
+        key: keys.gmap,
+        waypoints: '' //'Charlestown,MA|via:Lexington,MA'
     };
 
-    if (traffic_model) {
-        gMapGet.traffic_model = traffic_model;
-    }
-
     for(var i=1; i<points.length-1; i++) {
-        gMapGet.qs.waypoints += `via:${points[points.length-1].latitude},${points[points.length-1].longitude}|`;
+        gMapGet.waypoints += `via:${points[points.length-1].latitude},${points[points.length-1].longitude}|`;
     }
-    gMapGet.qs.waypoints = gMapGet.qs.waypoints.substring(0, gMapGet.qs.waypoints.length-1); // remove ending '|'
+    gMapGet.waypoints = gMapGet.waypoints.substring(0, gMapGet.waypoints.length-1); // remove ending '|'
 
-    return request(gMapGet)
-        .then( (response) => {
-            if (response.status === 'NOT_FOUND') {
-                console.error('ERROR when estimateByWayPoints(), no route were found');
+    return gMapGetAll(gMapGet, trafficModelList);
+}
+
+// var gMapGet = {
+//     uri: 'https://maps.googleapis.com/maps/api/directions/json',
+//     qs: {
+//         origin: '24.18638,120.64434',
+//         destination: '24.1850625,120.6419152',
+//         waypoints: '' //'Charlestown,MA|via:Lexington,MA'
+//     },
+//     headers: {
+//         'User-Agent': 'Request-Promise'
+//     },
+//     json: true // Automatically parses the JSON string in the response
+// };
+// var trafficModelList = ['optimistic', 'best_guess', 'pessimistic'];
+function gMapGetAll(gMapGet, trafficModelList, result) {
+    if (!result) {                                              // Initial
+
+        // Overwrite default settings with user provided values
+        var get = {
+            uri: 'https://maps.googleapis.com/maps/api/directions/json',
+            qs: {
+                // origin: '24.18638,120.64434',
+                // destination: '24.1850625,120.6419152',
+                // waypoints: 'Charlestown,MA|via:Lexington,MA',
+                key: keys.gmap,
+                departure_time: 'now'
+            },
+            headers: {
+                'User-Agent': 'Request-Promise'
+            },
+            json: true // Automatically parses the JSON string in the response
+        };
+        for (var key in gMapGet) {
+            if (gMapGet.hasOwnProperty(key)) {
+                get.qs[key] = gMapGet[key];
             }
-            return response.routes[0].legs[0].duration.value;
-        });
+        }
+
+        if(!trafficModelList) {
+            trafficModelList = validTrafficModels.slice(0);
+        }
+
+        result = {
+            optimistic: 0,
+            best_guess: 0,
+            pessimistic: 0
+        };
+
+        return gMapGetAll(get, validTrafficModels.slice(0), result);
+
+    } else if (trafficModelList.length <= 0) {                  // END
+        return result;
+    } else {                                                    // Loop
+        var traffic_model = trafficModelList.pop();
+        gMapGet.qs.traffic_model = traffic_model;
+        return request(gMapGet)
+            .then( (response) => {
+                if (response.status === 'NOT_FOUND') {
+                    console.error('ERROR when estimateByWayPoints(), no route were found');
+                    return gMapGetAll({}, [], result);
+                } else {
+                    result[traffic_model] = response.routes[0].legs[0].duration.value;
+                    return gMapGetAll(gMapGet, trafficModelList, result);
+                }
+            });
+    }
 }
 
 
@@ -155,17 +207,37 @@ function estimateFromLocation(config) {
             return waypoints;
         })
         .then( (points) => {
-            return estimateByWayPoints(points, config.traffic_model);
+            if (typeof config.traffic_model === 'string') {
+                return estimateByWayPoints(points, [config.traffic_model]);
+            } else if (config.traffic_model && config.traffic_model.length > 0) {
+                return estimateByWayPoints(points, config.traffic_model);
+            } else {
+                return estimateByWayPoints(points);
+            }
         })
         .then( (response) => {
-            if (config.traffic_model) {
-                result.time[config.traffic_model] = response;
-            } else {
-                result.time.best_guess = response;
-            }
+            result.time = response;
             return result;
         });
 }
+
+// Validate traffic_model
+// https://developers.google.com/maps/documentation/distance-matrix/intro?hl=zh-tw#traffic-model
+function TrafficModel (traffic_model) {
+    this.traffic_model = traffic_model;
+}
+TrafficModel.prototype.isValid = function () {
+    for (var i = 0; i < validTrafficModels.length; i++) {
+        if (this.traffic_model === validTrafficModels[i]){
+            return true;
+        }
+    }
+    return false;
+};
+TrafficModel.prototype.toString = function () {
+    return this.traffic_model;
+};
+
 
 // TODO: move / merge squareLocate with 'fetch_taichung'
 function squareLocate(coordinate, busStops, extraRange) {
@@ -212,3 +284,4 @@ function closestPointInSquare(target, square) {
 module.exports.estimate = estimate;
 module.exports.estimateByWayPoints = estimateByWayPoints;
 module.exports.estimateFromLocation = estimateFromLocation;
+module.exports.gMapGetAll = gMapGetAll;
