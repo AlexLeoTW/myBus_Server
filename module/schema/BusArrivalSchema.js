@@ -22,12 +22,17 @@ var arrivalSchema = mongoose.Schema({
     route: { type: Number, required: true},
     is_reverse: {type: Boolean, required: true},
     arrival: [
-        {sn: Number, time: Date}
+        {
+            sn: Number,
+            time: {
+                optimistic: Date,
+                best_guess: Date,
+                pessimistic: Date
+            }
+        }
     ],
-    lastUpdate: { type: Date, default: Date.now }
-}, {
+    lastUpdate: { type: Date, expires: 180, default: Date.now }
     // documents will be expired in 30 min.
-    createdAt: { type: Date, expires: 1800, default: Date.now }
 });
 
 // bus = {stopSn: 6}
@@ -44,7 +49,13 @@ arrivalSchema.methods.getArrival = function (bus) {
     return null;
 };
 
-// bus = {stopSn: 6, second: 100}
+// bus = {
+//     stopSn: 6,
+//     second: {
+//         best_guess: 100,
+//         pessimistic: 105
+//     }
+// }
 arrivalSchema.methods.setArrival = function (bus) {
     if (!this.arrival) {
         this.arrival = [];
@@ -53,14 +64,20 @@ arrivalSchema.methods.setArrival = function (bus) {
     // if found, edit
     for (var i=0; i<this.arrival.length && i<bus.stopSn; i++) {
         if (this.arrival[i].sn == bus.stopSn) {
-            this.arrival[i].time = new Date(Date.now() + 1000*bus.second);
+            this.arrival[i].time.optimistic = new Date(Date.now() + 1000*bus.second.optimistic);
+            this.arrival[i].time.best_guess = new Date(Date.now() + 1000*bus.second.best_guess);
+            this.arrival[i].time.pessimistic = new Date(Date.now() + 1000*bus.second.pessimistic);
         }
     }
 
     //if not found, add
     this.arrival.push({
         sn: bus.stopSn,
-        time: new Date(Date.now() + 1000*bus.second)
+        time: {
+            optimistic: new Date(Date.now() + 1000*bus.second.optimistic),
+            best_guess: new Date(Date.now() + 1000*bus.second.best_guess),
+            pessimistic: new Date(Date.now() + 1000*bus.second.pessimistic)
+        }
     });
     this.arrival.sort(function (a, b) {
         return a.sn - b.sn;

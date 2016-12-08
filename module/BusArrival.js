@@ -22,8 +22,10 @@ function updateArrivalPerBus(rows) {
         buildDataObj(bus)
         .then( (busData) => {
             debug(`Cacheing [${busData.plate_no}]`);
-            BusArrival.findOneAndUpdate({plate_number: busData.plate_number}, busData, {upsert: true});
+            return BusArrival.findOneAndUpdate({plate_number: busData.plate_no}, busData, {upsert: true}).exec();
             // busData.save();
+        })
+        .then( (obj) => {
             updateArrivalPerBus(rows);
         });
     }
@@ -42,7 +44,11 @@ function buildDataObj(bus) {
     //     route: { type: Number, required: true},
     //     is_reverse: {type: Boolean, required: true},
     //     arrival: [
-    //         {sn: Number, time: Date}
+            // {sn: Number, time: {
+            //     optimistic: Date,
+            //     best_guess: Date,
+            //     pessimistic: Date
+            // }}
     //     ],
     //     lastUpdate: { type: Date, default: Date.now }
     // }
@@ -51,7 +57,11 @@ function buildDataObj(bus) {
         route: bus.route,
         is_reverse: bus.is_reverse
     });
-    var offset = 0;
+    var nextStopOffset = {
+        // optimistic: 0,
+        // best_guess: 0,
+        // pessimistic: 0
+    };
 
     return gmap.estimateFromLocation({
         route: bus.route,
@@ -59,14 +69,14 @@ function buildDataObj(bus) {
         from: {
             longitude: bus.longitude,
             latitude: bus.latitude
-        }
+        },
     })
     .then( (nextStop) => {
         busData.setArrival({
             stopSn: nextStop.to.sn,
-            second: nextStop.time.best_guess
+            second: nextStop.time
         });
-        offset = nextStop.time.best_guess;
+        nextStopOffset = nextStop.time;
     })
     .then( ()=> {
         // how many bus stops is there
@@ -79,7 +89,7 @@ function buildDataObj(bus) {
             isReverse: bus.is_reverse,
             fromSn: busData.arrival[0].sn,
             toSn: bus.is_reverse?1:result[0].total,
-            'offset': offset
+            'offset': nextStopOffset
         });
     })
     .then( (estimationList) => {
@@ -98,7 +108,10 @@ function buildDataObj(bus) {
 //     isReverse: false,
 //     fromSn: 6,
 //     toSn: 9,
-//     offset: 100
+//     offset: {
+//         best_guess: 100,
+//         pessimistic: 105
+//     }
 // };
 function getMatrixEstimationList(options, result) {
     if (result === undefined) {                                  // Initial
@@ -120,7 +133,11 @@ function getMatrixEstimationList(options, result) {
             .then( (data) => {
                 result.push({
                     sn: data.to_sn,
-                    time: new Date(Date.now() + (data.time.best_guess + options.offset)*1000)
+                    time: {
+                        optimistic: new Date(Date.now() + (data.time.optimistic + options.offset.optimistic)*1000),
+                        best_guess: new Date(Date.now() + (data.time.best_guess + options.offset.best_guess)*1000),
+                        pessimistic: new Date(Date.now() + (data.time.pessimistic + options.offset.pessimistic)*1000)
+                    }
                 });
             })
             .then( () => {
