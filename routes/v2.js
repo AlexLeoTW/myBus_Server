@@ -82,7 +82,9 @@ router.get('/busArrival', (req, res) => {
             route: req.query.route,
             isReverse: req.query.is_reverse
         })
-        .then(res.json);
+        .then((data) => {
+            res.json(data);
+        });
     }
 });
 
