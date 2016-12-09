@@ -139,6 +139,8 @@ function updateRealTime(pos) {
                 debug(`ERROR when Updating realtime data for route ${mergedData.route} ${mergedData.isReverse?'foward':'reverse'}`);
                 console.error(err);
             });
+    } else if (pos === routeToFetch.length) {           // updateArrivalMongo() after updateRealTime()
+        BusArrival.updateArrivalMongo();
     }
 }
 
