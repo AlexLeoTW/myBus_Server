@@ -118,12 +118,12 @@ function gMapGetAll(gMapGet, trafficModelList, result) {
         }
 
         result = {
-            optimistic: 0,
-            best_guess: 0,
-            pessimistic: 0
+            optimistic: null,
+            best_guess: null,
+            pessimistic: null
         };
 
-        return gMapGetAll(get, validTrafficModels.slice(0), result);
+        return gMapGetAll(get, trafficModelList, result);
 
     } else if (trafficModelList.length <= 0) {                  // END
         return result;
@@ -132,8 +132,8 @@ function gMapGetAll(gMapGet, trafficModelList, result) {
         gMapGet.qs.traffic_model = traffic_model;
         return request(gMapGet)
             .then( (response) => {
-                if (response.status === 'NOT_FOUND') {
-                    console.error('ERROR when estimateByWayPoints(), no route were found');
+                if (response.status !== 'OK') {
+                    console.error(response.error_message);
                     return gMapGetAll({}, [], result);
                 } else {
                     result[traffic_model] = response.routes[0].legs[0].duration.value;
