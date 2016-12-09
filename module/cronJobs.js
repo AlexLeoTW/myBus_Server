@@ -227,17 +227,27 @@ function updateBusStatusEntry(data, connection) {
 
 // TODO auto update Reservation_List [Important MUST]
 function updateReservation (bus, connection) {
-    passengerOnboard(bus, connection).then( () => {
+    passengerOnboard(bus, connection)
+    .then( () => {
             tripFinish(bus, connection);
         });
 }
 
+// bus = {
+//     plate_no:'ABC-123',
+//     route:160,
+//     isReverse:false,
+//     closestStop: 2,
+//     nextStop:2,
+//     latitude:24.001,
+//     longitude:120.03451
+// }
 function passengerOnboard (bus, connection) {
     if (bus.closestStop !== bus.nextStop) {
         return Promise.resolve("Success");
     }
-    return connection.query(`UPDATE \`Reservation_List\` SET \`onboard\`=1 ` +
-                    `WHERE \`route\`=${bus.route} AND \`is_reverse\`=${bus.isReverse} AND \`from_sn\`=${bus.closestStop} AND \`onboard\`=0;`)
+    return connection.query(`UPDATE \`Reservation_List\` SET \`onboard\`='${bus.plate_no}' ` +
+                            `WHERE \`route\`=${bus.route} AND \`is_reverse\`=${bus.isReverse} AND \`from_sn\`=${bus.closestStop} AND \`onboard\` IS NULL`)
         .then( (result) => {
             if (result.affectedRows > 0) {
                 debug(`Estimate [${result.affectedRows}] person on board ${bus.plate_no} @${bus.route}:${bus.isReverse?'foward':'reverse'}:${bus.closestStop}`);
@@ -253,7 +263,7 @@ function tripFinish (bus, connection) {
         return Promise.resolve("Success");
     }
     return connection.query(`DELETE FROM \`Reservation_List\` ` +
-                            `WHERE \`route\`=${bus.route} AND \`is_reverse\`=${bus.isReverse} AND \`to_sn\`=${bus.closestStop} AND \`onboard\`=true`)
+                            `WHERE \`route\`=${bus.route} AND \`is_reverse\`=${bus.isReverse} AND \`to_sn\`=${bus.closestStop} AND \`onboard\`=${bus.plate_no}`)
         .then( (result) => {
             if (result.affectedRows > 0) {
                 debug(`Estimate [${result.affectedRows}] person off board ${bus.plate_no} @${bus.route}:${bus.isReverse?'foward':'reverse'}:${bus.closestStop}`);
