@@ -22,7 +22,7 @@ function updateArrivalPerBus(rows) {
         buildDataObj(bus)
         .then( (busData) => {
             debug(`Cacheing [${busData.plate_no}]`);
-            return BusArrival.findOneAndUpdate({plate_number: busData.plate_no}, busData, {upsert: true}).exec();
+            return BusArrival.findOneAndUpdate({plate_no: busData.plate_no}, busData, {upsert: true}).exec();
         })
         .then( (obj) => {
             updateArrivalPerBus(rows);
