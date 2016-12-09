@@ -155,7 +155,7 @@ router.post('/reservation',
             return;
         }
 
-        db.query(`SELECT COUNT(*) AS violationCount FROM \`violation_log\` WHERE \`UID\` = '00000000'`)
+        db.query(`SELECT COUNT(*) AS violationCount FROM \`violation_log\` WHERE \`UID\` = ${req.body.body} AND \`timestamp\` BETWEEN timestamp(DATE_SUB(NOW(), INTERVAL 30 DAY)) AND NOW()`)
             .then( (result) => {
                 if (result.violationCount > 3) {
                     res.status(403);
