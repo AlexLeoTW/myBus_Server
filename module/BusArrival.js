@@ -7,6 +7,7 @@ var mysql = require('promise-mysql');
 var sql_config = require('../sql_config');
 var db = mysql.createPool(sql_config.db);
 const debug = require('debug')('myBus:gArrival');
+const avgPassengerSwapTime = 2.384987893;
 
 function updateArrivalMongo() {     // <-- exports
     return db.query('SELECT * FROM `Bus_status` WHERE `route`=160 ORDER BY `plate_number` ASC ')
@@ -82,7 +83,7 @@ function buildDataObj(bus) {
         });
         nextStopOffset = nextStop.time;
     })
-    .then( ()=> {
+    .then( () => {
         // how many bus stops is there
         return db.query('SELECT COUNT(*) AS total FROM `Google_Matrix_Points` WHERE `route` = 160 AND `is_reverse` = false AND `type` = \'stop\'');
     })
@@ -102,9 +103,32 @@ function buildDataObj(bus) {
         } else {
             busData.arrival = busData.arrival.concat(estimationList);
         }
+    })
+    .then( () => {
+        // caculate influence caused by passengers getting on and off the bus
+        return db.query(`SELECT * FROM \`Reservation_List\` WHERE \`route\` = ${bus.route} AND \`is_reverse\` = ${bus.is_reverse} AND \`onboard\` = '${bus.plate_number}'`)
+            .then( (rows) => {
+                for (var i = 0; i < rows.length; i++) {
+                    var arrayKey = undefined;
 
+                    for (var j = 0; j < busData.arrival.length; j++) {
+                        if (busData.arrival[j].sn === rows[i].to_sn) {
+                            arrayKey = j;
+                        }
+                    }
+
+                    for (var traffic_model in busData.arrival[arrayKey].time) {
+                        if (busData.arrival[arrayKey].time.hasOwnProperty(traffic_model)) {
+                            busData.arrival[arrayKey].time[traffic_model] = new Date(busData.arrival[arrayKey].time[traffic_model].valueOf() + avgPassengerSwapTime*1000);
+                        }
+                    }
+                }
+            });
+    })
+    .then( () => {
         return busData;
     });
+
 }
 
 // var options = {

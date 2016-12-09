@@ -3,6 +3,7 @@
 const mongoose = require('mongoose');
 const mongoose_config = require('../../mongoose_config');
 const util = require('../util');
+const trafficModels = ['optimistic', 'best_guess', 'pessimistic'];
 mongoose.Promise = global.Promise;
 
 var opts = {
@@ -54,9 +55,14 @@ arrivalSchema.methods.getArrival = function (bus) {
 //     second: {
 //         best_guess: 100,
 //         pessimistic: 105
+//     },
+//     time: {
+//         best_guess: '2016-12-09T18:32:24.226Z',
+//         pessimistic: '2016-12-09T18:32:24.226Z'
 //     }
 // }
 arrivalSchema.methods.setArrival = function (bus) {
+    // if list not exists already, create
     if (!this.arrival) {
         this.arrival = [];
     }
@@ -64,16 +70,22 @@ arrivalSchema.methods.setArrival = function (bus) {
     // if found, edit
     for (var i=0; i<this.arrival.length && i<bus.stopSn; i++) {
         if (this.arrival[i].sn == bus.stopSn) {
-            this.arrival[i].time.optimistic = new Date(Date.now() + 1000*bus.second.optimistic);
-            this.arrival[i].time.best_guess = new Date(Date.now() + 1000*bus.second.best_guess);
-            this.arrival[i].time.pessimistic = new Date(Date.now() + 1000*bus.second.pessimistic);
+            // found !!
+            if (second) {
+                this.arrival[i].time.optimistic = new Date(Date.now() + 1000*bus.second.optimistic);
+                this.arrival[i].time.best_guess = new Date(Date.now() + 1000*bus.second.best_guess);
+                this.arrival[i].time.pessimistic = new Date(Date.now() + 1000*bus.second.pessimistic);
+            } else if (bus.time) {
+                this.arrival[i].time = bus.time;
+            }
+            return;
         }
     }
 
     //if not found, add
     this.arrival.push({
         sn: bus.stopSn,
-        time: {
+        time: bus.time ? bus.time : {
             optimistic: new Date(Date.now() + 1000*bus.second.optimistic),
             best_guess: new Date(Date.now() + 1000*bus.second.best_guess),
             pessimistic: new Date(Date.now() + 1000*bus.second.pessimistic)
