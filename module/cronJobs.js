@@ -264,8 +264,9 @@ function tripFinish (bus, connection) {
     if (bus.closestStop !== bus.nextStop) {
         return Promise.resolve("Success");
     }
-    return connection.query(`DELETE FROM \`Reservation_List\` ` +
-                            `WHERE \`route\`=${bus.route} AND \`is_reverse\`=${bus.isReverse} AND \`to_sn\`=${bus.closestStop} AND \`onboard\`=${bus.plate_no}`)
+    var query = (`DELETE FROM \`Reservation_List\` ` +
+                            `WHERE \`route\`=${bus.route} AND \`is_reverse\`=${bus.isReverse} AND \`to_sn\`=${bus.closestStop} AND \`onboard\`='${bus.plate_no}'`);
+    return connection.query(query)
         .then( (result) => {
             if (result.affectedRows > 0) {
                 debug(`Estimate [${result.affectedRows}] person off board ${bus.plate_no} @${bus.route}:${bus.isReverse?'foward':'reverse'}:${bus.closestStop}`);
@@ -273,6 +274,7 @@ function tripFinish (bus, connection) {
         })
         .catch( (err) => {
             console.error(`ERROR when deleteing Reservation_List for ${bus.plate_no}`);
+            console.error(`[${query}]`);
         });
 }
 
