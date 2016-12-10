@@ -10,23 +10,44 @@ const debug = require('debug')('myBus:gArrival');
 const avgPassengerSwapTime = 2.384987893;
 
 function updateArrivalMongo() {     // <-- exports
-    return db.query('SELECT * FROM `Bus_status` WHERE `route`=160 ORDER BY `plate_number` ASC ')
+    // ORDER BY `nextStop`
+    return db.query('SELECT * FROM `Bus_status` WHERE `route` = 160 ORDER BY `is_reverse`,`nextStop` ASC ')
+        .then( (busList) => {
+            // sort by reservationList layer stack (low to high)
+            var foward = [];
+            var reverse = [];
+
+            // divide 'busList' into 'foward' and 'reverse' two arrays
+            for (var i=0; i<busList.length; i++) {
+                if (busList[[i].is_reverse]) {
+                    reverse = busList.slice(i);
+                }
+            }
+
+            foward.reverse();
+            busList = foward.concat(reverse);
+
+            return busList;
+        })
         .then(updateArrivalPerBus);
 }
 
 // Control Recursive Promise Call
-function updateArrivalPerBus(rows) {
-    if (!rows || rows.length === 0) {    // END
+function updateArrivalPerBus(busList) {
+    if (!busList || busList.length === 0) {    // END
         return;
     } else {
-        var bus = rows.pop();
-        buildDataObj(bus)
+        var bus = busList.pop();
+        return db.query(`SELECT * FROM \`Reservation_List\` WHERE \`route\` = ${bus.route} AND \`is_reverse\` = ${bus.is_reverse}`)
+        .then( (reservationList) => {
+            buildDataObj(bus, reservationList);
+        })
         .then( (busData) => {
             debug(`Cacheing [${busData.plate_no}]`);
             return BusArrival.findOneAndUpdate({plate_no: busData.plate_no}, busData, {upsert: true}).exec();
         })
         .then( (obj) => {
-            updateArrivalPerBus(rows);
+            updateArrivalPerBus(busList);
         });
     }
 }
@@ -38,7 +59,7 @@ function updateArrivalPerBus(rows) {
 //     latitude: 24.1365,
 //     is_reverse: false
 // };
-function buildDataObj(bus) {
+function buildDataObj(bus, reservationList) {
     // {
     //     plate_no: { type: String, required: true, unique: true},
     //     route: { type: Number, required: true},
@@ -106,24 +127,43 @@ function buildDataObj(bus) {
     })
     .then( () => {
         // caculate influence caused by passengers getting on and off the bus
-        return db.query(`SELECT * FROM \`Reservation_List\` WHERE \`route\` = ${bus.route} AND \`is_reverse\` = ${bus.is_reverse} AND \`onboard\` = '${bus.plate_number}'`)
-            .then( (rows) => {
-                for (var i = 0; i < rows.length; i++) {
-                    var arrayKey = undefined;
+        var i, j, arrayKey, traffic_model;
+        for (i = 0; i < reservationList.length; i++) {
+            var reservation = reservationList[i];
 
-                    for (var j = 0; j < busData.arrival.length; j++) {
-                        if (busData.arrival[j].sn === rows[i].to_sn) {
-                            arrayKey = j;
-                        }
-                    }
-
-                    for (var traffic_model in busData.arrival[arrayKey].time) {
-                        if (busData.arrival[arrayKey].time.hasOwnProperty(traffic_model)) {
-                            busData.arrival[arrayKey].time[traffic_model] = new Date(busData.arrival[arrayKey].time[traffic_model].valueOf() + avgPassengerSwapTime*1000);
-                        }
+            // un-onboarded passenger found
+            if (reservationList[i].onboard && reservationList[i].from_sn > busData.arrival[0].sn) {
+                arrayKey = undefined;
+                // set arrayKey as passenger from_sn location
+                for (j = 0; j < busData.arrival.length; j++) {
+                    if (busData.arrival[j].sn === reservationList[i].from_sn) {
+                        arrayKey = j;
+                        break;
                     }
                 }
-            });
+                // add passenger caused time to each traffic_model in (prediction)time
+                for (traffic_model in busData.arrival[arrayKey].time) {
+                    if (busData.arrival[arrayKey].time.hasOwnProperty(traffic_model)) {
+                        busData.arrival[arrayKey].time[traffic_model] = new Date(busData.arrival[arrayKey].time[traffic_model].valueOf() + avgPassengerSwapTime*1000);
+                    }
+                }
+            } else if (reservationList[i].onboard === bus.plate_number) {
+                arrayKey = undefined;
+                // set arrayKey as passenger to_sn location
+                for (j = 0; j < busData.arrival.length; j++) {
+                    if (busData.arrival[j].sn === reservationList[i].to_sn) {
+                        arrayKey = j;
+                        break;
+                    }
+                }
+                // add passenger caused time to each traffic_model in (prediction)time
+                for (traffic_model in busData.arrival[arrayKey].time) {
+                    if (busData.arrival[arrayKey].time.hasOwnProperty(traffic_model)) {
+                        busData.arrival[arrayKey].time[traffic_model] = new Date(busData.arrival[arrayKey].time[traffic_model].valueOf() + avgPassengerSwapTime*1000);
+                    }
+                }
+            }
+        }
     })
     .then( () => {
         return busData;
