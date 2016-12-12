@@ -6,7 +6,7 @@ const BusArrival = require('./schema/BusArrivalSchema').BusArrival;
 var mysql = require('promise-mysql');
 var sql_config = require('../sql_config');
 var db = mysql.createPool(sql_config.db);
-const debug = require('debug')('myBus:gArrival');
+var debug = require('debug')('myBus:gMap');
 const avgPassengerSwapTime = 2.384987893;
 
 function updateArrivalMongo() {     // <-- exports
@@ -19,8 +19,10 @@ function updateArrivalMongo() {     // <-- exports
 
             // divide 'busList' into 'foward' and 'reverse' two arrays
             for (var i=0; i<busList.length; i++) {
-                if (busList[[i].is_reverse]) {
+                if (busList[i].is_reverse) {
+                    foward = busList.slice(0, i-1);
                     reverse = busList.slice(i);
+                    break;
                 }
             }
 
@@ -40,7 +42,7 @@ function updateArrivalPerBus(busList) {
         var bus = busList.pop();
         return db.query(`SELECT * FROM \`Reservation_List\` WHERE \`route\` = ${bus.route} AND \`is_reverse\` = ${bus.is_reverse}`)
         .then( (reservationList) => {
-            buildDataObj(bus, reservationList);
+            return buildDataObj(bus, reservationList);
         })
         .then( (busData) => {
             debug(`Cacheing [${busData.plate_no}]`);
