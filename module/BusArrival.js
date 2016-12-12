@@ -96,6 +96,7 @@ function buildDataObj(bus, reservationList) {
         },
     })
     .then( (nextStop) => {
+        console.log(`nextStop.time = ${JSON.stringify(nextStop.time)}`);
         busData.arrival.push({
             sn: nextStop.to.sn,
             time: {
@@ -130,7 +131,7 @@ function buildDataObj(bus, reservationList) {
     .then( () => {
         // caculate influence caused by passengers getting on and off the bus
         var i, j, arrayKey, traffic_model;
-        for (i = 0; i < reservationList.length; i++) {
+        for (i = 0; reservationList && i < reservationList.length; i++) {
             var reservation = reservationList[i];
 
             // un-onboarded passenger found
