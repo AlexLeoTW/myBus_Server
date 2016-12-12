@@ -136,7 +136,7 @@ function updateRealTime(pos) {
                 updateRealTime(pos+1);
             })
             .catch((err) => {
-                debug(`ERROR when Updating realtime data for route ${mergedData.route} ${mergedData.isReverse?'foward':'reverse'}`);
+                debug(`ERROR when Updating realtime data for route ${routeToFetch[pos].route} ${routeToFetch[pos].isReverse?'foward':'reverse'}`);
                 console.error(err);
             });
     } else if (pos === routeToFetch.length) {           // updateArrivalMongo() after updateRealTime()
