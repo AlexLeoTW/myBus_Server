@@ -16,15 +16,17 @@ function updateArrivalMongo() {     // <-- exports
             // sort by reservationList layer stack (low to high)
             var foward = [];
             var reverse = [];
+            var slicePoint = 0;
 
             // divide 'busList' into 'foward' and 'reverse' two arrays
             for (var i=0; i<busList.length; i++) {
                 if (busList[i].is_reverse) {
-                    foward = busList.slice(0, i-1);
-                    reverse = busList.slice(i);
+                    slicePoint = i;
                     break;
                 }
             }
+            foward = busList.slice(0, slicePoint+1);
+            reverse = busList.slice(slicePoint+1);
 
             foward.reverse();
             busList = foward.concat(reverse);
