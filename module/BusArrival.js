@@ -11,7 +11,7 @@ const avgPassengerSwapTime = 2.384987893;
 
 function updateArrivalMongo() {     // <-- exports
     // ORDER BY `nextStop`
-    return db.query('SELECT * FROM `Bus_status` WHERE `route` = 160 ORDER BY `is_reverse`,`nextStop` ASC ')
+    return db.query('SELECT * FROM `Bus_status` WHERE `route` = 5 OR `route` = 160 ORDER BY `is_reverse`,`nextStop` ASC ')
         .then( (busList) => {
             // sort by reservationList layer stack (low to high)
             var foward = [];
