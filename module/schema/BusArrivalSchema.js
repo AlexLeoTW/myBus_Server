@@ -96,6 +96,23 @@ arrivalSchema.methods.setArrival = function (bus) {
     });
 };
 
+arrivalSchema.statics.cache = function (busData) {
+    return BusArrival.findOne({plate_no: busData.plate_no}).exec()
+        .then( (document) => {
+            if (document) {
+                for (var key in busData) {
+                    if (busData.hasOwnProperty(key)) {
+                        document[key] = busData[key];
+                    }
+                    document.lastUpdate = new Date();
+                }
+                document.save();
+            } else {
+                (new this(busData)).save();
+            }
+        });
+};
+
 var BusArrival = db.model('BusArrival', arrivalSchema);
 
 module.exports.BusArrival = BusArrival;

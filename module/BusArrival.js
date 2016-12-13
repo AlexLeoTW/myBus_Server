@@ -48,7 +48,7 @@ function updateArrivalPerBus(busList) {
         })
         .then( (busData) => {
             debug(`Cacheing [${busData.plate_no}]`);
-            return BusArrival.findOneAndUpdate({plate_no: busData.plate_no}, busData, {upsert: true}).exec();
+            return BusArrival.cache(busData);
         })
         .then( (obj) => {
             updateArrivalPerBus(busList);
@@ -98,7 +98,7 @@ function buildDataObj(bus, reservationList) {
         },
     })
     .then( (nextStop) => {
-        console.log(`nextStop.time = ${JSON.stringify(nextStop.time)}`);
+        // console.log(`nextStop.time = ${JSON.stringify(nextStop.time)}`);
         busData.arrival.push({
             sn: nextStop.to.sn,
             time: {
