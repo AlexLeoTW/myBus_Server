@@ -26,7 +26,7 @@ var timeSchema = mongoose.Schema({
         best_guess: Number,
         pessimistic: Number
     },
-    lastUpdate:  { type: Date, expires: 1800, default: Date.now }
+    lastUpdate: { type: Date, expires: 1800, default: Date.now }
     // documents will be expired in 30 minute
 });
 
