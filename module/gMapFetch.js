@@ -6,7 +6,8 @@ var sql_config = require('../sql_config');
 var db = mysql.createPool(sql_config.db);
 const keys = require('../api_keys');
 const util = require('./util');
-const validTrafficModels = ['optimistic', 'best_guess', 'pessimistic'];
+// const validTrafficModels = ['optimistic', 'best_guess', 'pessimistic'];
+const validTrafficModel = 'best_guess';
 
 
 /*
@@ -14,8 +15,8 @@ const validTrafficModels = ['optimistic', 'best_guess', 'pessimistic'];
  *     config = {
  *         route: 160,
  *         isReverse: true,
- *         from: 8,
- *         to: 7,
+ *         from_sn: 8,
+ *         to_sn: 7,
  *         [traffic_model: best_guess / pessimistic / optimistic]
  *     }
 */
@@ -60,7 +61,7 @@ function estimate(config) {
 //     {longitude: 120.683912, latitude: 24.136519},
 //     {longitude: 120.683912, latitude: 24.136519},
 // ];
-function estimateByWayPoints(points, trafficModelList) {
+function estimateByWayPoints(points) {
     var gMapGet = {
         origin: `${points[0].latitude},${points[0].longitude}`,
         destination: `${points[points.length-1].latitude},${points[points.length-1].longitude}`,
@@ -73,7 +74,7 @@ function estimateByWayPoints(points, trafficModelList) {
     }
     gMapGet.waypoints = gMapGet.waypoints.substring(0, gMapGet.waypoints.length-1); // remove ending '|'
 
-    return gMapGetAll(gMapGet, trafficModelList);
+    return gMapGetAll(gMapGet);
 }
 
 // var gMapGet = {
@@ -88,59 +89,41 @@ function estimateByWayPoints(points, trafficModelList) {
 //     },
 //     json: true // Automatically parses the JSON string in the response
 // };
-// var trafficModelList = ['optimistic', 'best_guess', 'pessimistic'];
-function gMapGetAll(gMapGet, trafficModelList, result) {
-    if (!result) {                                              // Initial
-
-        // Overwrite default settings with user provided values
-        var get = {
-            uri: 'https://maps.googleapis.com/maps/api/directions/json',
-            qs: {
-                // origin: '24.18638,120.64434',
-                // destination: '24.1850625,120.6419152',
-                // waypoints: 'Charlestown,MA|via:Lexington,MA',
-                key: keys.gmap,
-                departure_time: 'now'
-            },
-            headers: {
-                'User-Agent': 'Request-Promise'
-            },
-            json: true // Automatically parses the JSON string in the response
-        };
-        for (var key in gMapGet) {
-            if (gMapGet.hasOwnProperty(key)) {
-                get.qs[key] = gMapGet[key];
-            }
+function gMapGetAll(gMapGet, result) {
+    // default settings
+    var get = {
+        uri: 'https://maps.googleapis.com/maps/api/directions/json',
+        qs: {
+            // origin: '24.18638,120.64434',
+            // destination: '24.1850625,120.6419152',
+            // waypoints: 'Charlestown,MA|via:Lexington,MA',
+            key: keys.gmap,
+            departure_time: 'now'
+        },
+        headers: {
+            'User-Agent': 'Request-Promise'
+        },
+        json: true // Automatically parses the JSON string in the response
+    };
+    // Overwrite default settings with user provided values
+    for (var key in gMapGet) {
+        if (gMapGet.hasOwnProperty(key)) {
+            get.qs[key] = gMapGet[key];
         }
-
-        if(!trafficModelList) {
-            trafficModelList = validTrafficModels.slice(0);
-        }
-
-        result = {
-            optimistic: null,
-            best_guess: null,
-            pessimistic: null
-        };
-
-        return gMapGetAll(get, trafficModelList, result);
-
-    } else if (trafficModelList.length <= 0) {                  // END
-        return result;
-    } else {                                                    // Loop
-        var traffic_model = trafficModelList.pop();
-        gMapGet.qs.traffic_model = traffic_model;
-        return request(gMapGet)
-            .then( (response) => {
-                if (response.status !== 'OK') {
-                    console.error(response.error_message);
-                    return gMapGetAll({}, [], result);
-                } else {
-                    result[traffic_model] = response.routes[0].legs[0].duration.value;
-                    return gMapGetAll(gMapGet, trafficModelList, result);
-                }
-            });
     }
+
+    result = {};
+    result[validTrafficModel] = null;
+
+    return request(get)
+        .then( (response) => {
+            if (response.status !== 'OK') {
+                console.error(response.error_message);
+            } else {
+                result[validTrafficModel] = response.routes[0].legs[0].duration.value;
+            }
+            return result;
+        });
 }
 
 
@@ -220,23 +203,6 @@ function estimateFromLocation(config) {
             return result;
         });
 }
-
-// Validate traffic_model
-// https://developers.google.com/maps/documentation/distance-matrix/intro?hl=zh-tw#traffic-model
-function TrafficModel (traffic_model) {
-    this.traffic_model = traffic_model;
-}
-TrafficModel.prototype.isValid = function () {
-    for (var i = 0; i < validTrafficModels.length; i++) {
-        if (this.traffic_model === validTrafficModels[i]){
-            return true;
-        }
-    }
-    return false;
-};
-TrafficModel.prototype.toString = function () {
-    return this.traffic_model;
-};
 
 
 // TODO: move / merge squareLocate with 'fetch_taichung'

@@ -98,14 +98,15 @@ function buildDataObj(bus, reservationList) {
         },
     })
     .then( (nextStop) => {
-        // console.log(`nextStop.time = ${JSON.stringify(nextStop.time)}`);
+        var nextStopArrivalTime = {};
+        for (var keys in nextStop.time) {
+            if (nextStop.time.hasOwnProperty(keys)) {
+                nextStopArrivalTime[keys] = new Date(Date.now() + nextStop.time[keys]*1000);
+            }
+        }
         busData.arrival.push({
             sn: nextStop.to.sn,
-            time: {
-                optimistic: new Date(Date.now() + nextStop.time.optimistic*1000),
-                best_guess: new Date(Date.now() + nextStop.time.best_guess*1000),
-                pessimistic: new Date(Date.now() + nextStop.time.pessimistic*1000)
-            }
+            time: nextStopArrivalTime
         });
         nextStopOffset = nextStop.time;
     })
@@ -204,13 +205,16 @@ function getMatrixEstimationList(options, result) {
             to_sn: options.toSn
         })
             .then( (data) => {
+                var arrivalTime = {};
+                // find traffic_model in options.offset and set
+                for (var traffic_model in options.offset) {
+                    if (options.offset.hasOwnProperty(traffic_model)) {
+                        arrivalTime[traffic_model] = new Date(Date.now() + (data.time[traffic_model] + options.offset[traffic_model])*1000);
+                    }
+                }
                 result.push({
                     sn: data.to_sn,
-                    time: {
-                        optimistic: new Date(Date.now() + (data.time.optimistic + options.offset.optimistic)*1000),
-                        best_guess: new Date(Date.now() + (data.time.best_guess + options.offset.best_guess)*1000),
-                        pessimistic: new Date(Date.now() + (data.time.pessimistic + options.offset.pessimistic)*1000)
-                    }
+                    time: arrivalTime
                 });
             })
             .then( () => {

@@ -208,7 +208,7 @@ function saveBusStatus(data, connection) {
 function clearOutdatedBus(connection) {
     // remove entry over 30 min
     return connection.query(`DELETE FROM \`Bus_status\` WHERE ABS(\`last_update\`-CURRENT_TIMESTAMP) > 1800`)
-    .catch((err) => {console.log(err);});
+    .catch((err) => {console.err(err);});
 }
 
 function updateBusStatusEntry(data, connection) {
@@ -227,7 +227,6 @@ function updateBusStatusEntry(data, connection) {
         });
 }
 
-// TODO auto update Reservation_List [Important MUST]
 function updateReservation (bus, connection) {
     passengerOnboard(bus, connection)
     .then( () => {
@@ -279,13 +278,7 @@ function tripFinish (bus, connection) {
 }
 
 /* ========================================================================================================= */
-
-function updateGMapArrival() {
-    BusArrival.updateArrivalMongo();
-}
-
-/* ========================================================================================================= */
-
+// TODO finish and add cron
 function updateRouteList() {
     return taichung.fetchRouteList().then((routeList) => {
         return saveRouteList();
@@ -378,12 +371,11 @@ function saveStopEntry(route, sn, isReverse, longitude, latitude, name) {
                 `VALUES(${route}, ${sn}, ${isReverse}, ${longitude}, ${latitude}, "${name}") ` +
                 `ON DUPLICATE KEY UPDATE longitude=${longitude}, latitude=${latitude}, name="${name}"`
     ).catch((err) => {
-        console.log(err);
+        console.err(err);
     });
 }
 
 module.exports.updateBusTable = updateBusTable;
 module.exports.updateRealTime = updateRealTime;
-module.exports.updateGMapArrival = updateGMapArrival;
 module.exports.updateRouteList = updateRouteList;
 module.exports.updateStopList = updateStopList;
