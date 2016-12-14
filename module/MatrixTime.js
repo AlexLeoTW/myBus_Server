@@ -2,6 +2,7 @@
 
 const gmap = require('./gMapFetch');
 const MatrixTime = require('./schema/MatrixTimeSchema').MatrixTime;
+const debug = require('debug')('myBus:matrix');
 
 
 // restrive travel time estimation from Google Directions
@@ -102,6 +103,7 @@ function cacheAndReturn (options) {
         // isReverse --rename--> is_reverse
         data.is_reverse = data.isReverse;
         delete data.isReverse;
+        debug(`Cacheing [route ${data.route} ${data.is_reverse}, from ${data.from_sn} to ${data.to_sn}]`);
 
         return (new MatrixTime(data)).save();
     })
