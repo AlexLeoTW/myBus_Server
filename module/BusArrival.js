@@ -111,7 +111,7 @@ function buildDataObj(bus, reservationList) {
     })
     .then( () => {
         // how many bus stops is there
-        return db.query('SELECT COUNT(*) AS total FROM `Google_Matrix_Points` WHERE `route` = 160 AND `is_reverse` = false AND `type` = \'stop\'');
+        return db.query(`SELECT COUNT(*) AS total FROM \`Google_Matrix_Points\` WHERE \`route\` = ${bus.route} AND \`is_reverse\` = ${bus.is_reverse} AND \`type\` = 'stop'`);
     })
     .then( (result) => {
         // console.log(`getMatrixEstimationList(fromSn: ${busData.arrival[0].sn}, toSn: ${bus.is_reverse?1:result[0].total}, isReverse: ${bus.is_reverse?'true':'false'})`);
@@ -227,11 +227,6 @@ function getMatrixEstimationList(options, result) {
 //         isReverse: false
 // };
 function arrivalList(options) {
-    // var cityBusArrival = db.query(`SELECT * FROM \`Bus_arrival\` WHERE \`route\` = ${options.route} AND \`is_reverse\` = ${options.isReverse} `);
-    // var busList = BusArrival.find({
-    //     route: options.route,
-    //     is_reverse: options.isReverse
-    // }).exec();
     var cityBusArrival,
         busList;
 
