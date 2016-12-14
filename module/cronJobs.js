@@ -51,7 +51,7 @@ function clearTimetable (route) {
         connection.query(query).then((rows) => {
             console.log('Delete OK');
         }).catch((err) => {
-            console.log(err.code);
+            console.error(err.code);
         }).finally(() => {
             db.releaseConnection(connection);
         });
@@ -103,7 +103,7 @@ function saveTimetableEntry (route, weekday, is_reverse, hour, minute, local) {
         connection.query(query).then((rows) => {
             console.log('\tquery ok');
         }).catch((err) => {
-            console.log('\t' + err.code);
+            console.error('\t' + err.code);
         }).finally(() => {
             db.releaseConnection(connection);
         });
@@ -208,7 +208,9 @@ function saveBusStatus(data, connection) {
 function clearOutdatedBus(connection) {
     // remove entry over 30 min
     return connection.query(`DELETE FROM \`Bus_status\` WHERE ABS(\`last_update\`-CURRENT_TIMESTAMP) > 1800`)
-    .catch((err) => {console.log(err);});
+    .catch( (err) => {
+        console.log(err);
+    });
 }
 
 function updateBusStatusEntry(data, connection) {
@@ -372,7 +374,7 @@ function saveStopEntry(route, sn, isReverse, longitude, latitude, name) {
                 `VALUES(${route}, ${sn}, ${isReverse}, ${longitude}, ${latitude}, "${name}") ` +
                 `ON DUPLICATE KEY UPDATE longitude=${longitude}, latitude=${latitude}, name="${name}"`
     ).catch((err) => {
-        console.log(err);
+        console.error(err);
     });
 }
 
