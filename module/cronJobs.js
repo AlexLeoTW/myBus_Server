@@ -280,12 +280,6 @@ function tripFinish (bus, connection) {
 
 /* ========================================================================================================= */
 
-function updateGMapArrival() {
-    BusArrival.updateArrivalMongo();
-}
-
-/* ========================================================================================================= */
-
 function updateRouteList() {
     return taichung.fetchRouteList().then((routeList) => {
         return saveRouteList();
@@ -384,6 +378,5 @@ function saveStopEntry(route, sn, isReverse, longitude, latitude, name) {
 
 module.exports.updateBusTable = updateBusTable;
 module.exports.updateRealTime = updateRealTime;
-module.exports.updateGMapArrival = updateGMapArrival;
 module.exports.updateRouteList = updateRouteList;
 module.exports.updateStopList = updateStopList;
