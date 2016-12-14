@@ -208,7 +208,7 @@ function saveBusStatus(data, connection) {
 function clearOutdatedBus(connection) {
     // remove entry over 30 min
     return connection.query(`DELETE FROM \`Bus_status\` WHERE ABS(\`last_update\`-CURRENT_TIMESTAMP) > 1800`)
-    .catch((err) => {console.err(err);});
+    .catch((err) => {console.error(err);});
 }
 
 function updateBusStatusEntry(data, connection) {
@@ -371,7 +371,7 @@ function saveStopEntry(route, sn, isReverse, longitude, latitude, name) {
                 `VALUES(${route}, ${sn}, ${isReverse}, ${longitude}, ${latitude}, "${name}") ` +
                 `ON DUPLICATE KEY UPDATE longitude=${longitude}, latitude=${latitude}, name="${name}"`
     ).catch((err) => {
-        console.err(err);
+        console.error(err);
     });
 }
 
